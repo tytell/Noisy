@@ -1,6 +1,7 @@
 function data = loadEntrainData(filename,treatments,ind, varargin)
 
-opt.output = 'motor';       % or encoder
+opt.output = 'encoder';       % or encoder
+opt.checksweep = true;
 
 opt = parsevarargin(opt,varargin, 4);
 
@@ -33,15 +34,67 @@ switch opt.output
 end
 
 t = startsamp/sampfreq + (0:size(sig,1)-1)' / sampfreq;
+startt = t(1);
 
 data.sig = sig;
 data.t = t;
 data.ang = ang;
 
-if (strcmp(treatments.type{ind}, 'Sine'))
-    phase = mod((t - startsamp) * treatments.frequencyhz(ind), 1);
-    data.phase = phase;
-    data.stimfreq = treatments.frequencyhz(ind);
+switch treatments.type{ind}
+    case 'Sine'
+        phase = (t - startt) * treatments.frequencyhz(ind);
+        data.phase = mod(phase,1);
+        data.cycle = floor(phase)+1;
+        data.stimfreq = treatments.frequencyhz(ind);
+        data.amp = treatments.amplitudedeg(ind);
+        data.noise = treatments.noisestddeg(ind);
+        
+    case 'Frequency Sweep'
+        phase = treatments.frequencyhz(ind) * ...
+            (treatments.kfreq(ind).^(t-startt) - 1) / log(treatments.kfreq);
+        data.phase = mod(phase,1);
+        data.cycle = floor(phase)+1;
+        
+        if (opt.checksweep)
+            upind = find([true; ((ang(2:end) > 0) & (ang(1:end-1) <= 0))]);
+            downind = find((ang(2:end) <= 0) & (ang(1:end-1) > 0));
+            
+            downphase = mod(phase(downind),1);
+            [~,R] = angmean(2*pi*downphase);
+            if (R < 0.9)
+                warning('Sweep phase seems to be weird.  Estimating empirically');
+                
+                phase = NaN(size(t));
+                for i = 1:length(upind)-1
+                    k1 = upind(i):downind(i);
+                    phase(k1) = linspace(0,0.5,length(k1)) + i-1;
+                    k2 = downind(i):upind(i+1);
+                    phase(k2) = linspace(0.5,1,length(k2)) + i-1;
+                end
+            end
+        end
+        data.phase = mod(phase,1);
+        data.cycle = floor(phase)+1;
+        data.stimfreq = deriv(t,phase);
+        data.amp = treatments.amplitudedeg(ind);
+    
+    case 'AmplitudeSweep'
+        phase = (t - startt) * treatments.frequencyhz(ind);
+        data.phase = mod(phase,1);
+        data.cycle = floor(phase)+1;
+        data.stimfreq = treatments.frequencyhz(ind);
+        if (treatments.amplitudechangedegpersec(ind) ~= 0)
+            data.amp = treatments.amplitudedeg(ind) + (t - startt) * treatments.amplitudechangedegpersec(ind);
+        else
+            data.amp = treatments.amplitudedeg(ind);
+        end
+        if (treatments.noisechangedegpersec(ind) ~= 0)
+            data.noise = treatments.noisestddeg(ind) + (t - startt) * treatments.noisechangedegpersec(ind);
+        else
+            data.noise = treatments.noisestddeg(ind);
+        end        
+    otherwise
+        error('Unrecognized treatment type: %s',treatments.type{ind});
 end
 
 
