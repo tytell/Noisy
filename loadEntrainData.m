@@ -35,6 +35,7 @@ end
 
 t = startsamp/sampfreq + (0:size(sig,1)-1)' / sampfreq;
 startt = t(1);
+dt = 1/sampfreq;
 
 data.sig = sig;
 data.t = t;
@@ -56,7 +57,7 @@ switch treatments.type{ind}
         data.cycle = floor(phase)+1;
         
         if (opt.checksweep)
-            upind = find([true; ((ang(2:end) > 0) & (ang(1:end-1) <= 0))]);
+            upind = find((ang(2:end) > 0) & (ang(1:end-1) <= 0));
             downind = find((ang(2:end) <= 0) & (ang(1:end-1) > 0));
             
             downphase = mod(phase(downind),1);
@@ -64,13 +65,24 @@ switch treatments.type{ind}
             if (R < 0.9)
                 warning('Sweep phase seems to be weird.  Estimating empirically');
                 
+                %linearly interpolate the true zero crossings
+                tup = t(upind) + dt/(ang(upind+1) - ang(upind)) * (0 - ang(upind));
+                tdown = t(downind) + dt/(ang(downind+1) - ang(downind)) * (0 - ang(downind));
+                
+                %ascending zero crossing should have phase 0,1,...
+                phup = (0:length(tup)-1)';
+                %descending should be phase 0.5,1.5,...
+                phdown = (0.5:length(tdown))';
+                
+                tzero = [tup; tdown];
+                [tzero,ord] = sort(tzero);
+                phzero = [phup; phdown];
+                phzero = phzero(ord);
+                phzero = unmod(phzero,1);
+                
+                span = (t >= tzero(1)) & (t <= tzero(end));
                 phase = NaN(size(t));
-                for i = 1:length(upind)-1
-                    k1 = upind(i):downind(i);
-                    phase(k1) = linspace(0,0.5,length(k1)) + i-1;
-                    k2 = downind(i):upind(i+1);
-                    phase(k2) = linspace(0.5,1,length(k2)) + i-1;
-                end
+                phase(span) = interp1(tzero,phzero, t(span));                
             end
         end
         data.phase = mod(phase,1);

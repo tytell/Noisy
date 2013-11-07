@@ -74,15 +74,16 @@ data.burstcyclet = NaN(size(data.burstt));
 data.burstcycle = NaN(size(data.burstt));
 
 uphase = unwrap(2*pi*data.phase) / (2*pi);
+goodphase = isfinite(uphase);
 for i = 1:size(data.spiket,2)
     good = isfinite(data.spiket(:,i));
-    data.spikephase(good,i) = interp1(data.t,uphase, data.spiket(good,i));
+    data.spikephase(good,i) = interp1(data.t(goodphase),uphase(goodphase), data.spiket(good,i));
 
     cycle1 = floor(data.spikephase(good,i));
-    data.spikecyclet(good,i) = interp1(uphase,data.t, cycle1);
+    data.spikecyclet(good,i) = interp1(uphase(goodphase),data.t(goodphase), cycle1);
     
     good = isfinite(data.burstt(:,i));
-    data.burstphase(good,i) = interp1(data.t,uphase, data.burstt(good,i)); 
+    data.burstphase(good,i) = interp1(data.t(goodphase),uphase(goodphase), data.burstt(good,i)); 
 end
 
 data.spikephase = mod(data.spikephase,1);
