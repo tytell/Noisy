@@ -7,14 +7,17 @@ ncycle = size(data.stimcyclet,1);
 spikecycle = NaN(size(data.spiket));
 Rcycle = NaN(ncycle,size(data.spiket,2));
 phasecycle = NaN(ncycle,size(data.spiket,2));
+npercycle = NaN(ncycle,size(data.spiket,2));
 
 navg2 = floor(opt.navg/2);
 navg = opt.navg;
 
+goodcycle = isfinite(data.cycle);
 for i = 1:size(data.spiket,2)
     good = isfinite(data.spiket(:,i));
-    spikecycle(good,i) = interp1(data.t, data.cycle, data.spiket(good,i));
+    spikecycle(good,i) = interp1(data.t(goodcycle), data.cycle(goodcycle), data.spiket(good,i));
     
+    good = isfinite(spikecycle(good,i));
     c1 = accumarray(spikecycle(good,i), data.spikephase(good,i), [], ...
         @(x) sum(cos(2*pi*x)));
     s1 = accumarray(spikecycle(good,i), data.spikephase(good,i), [], ...
@@ -36,10 +39,12 @@ for i = 1:size(data.spiket,2)
     
     Rcycle(1:length(c1),i) = sqrt(c2.^2 + s2.^2)./n2;
     phasecycle(1:length(c1),i) = mod(atan2(s2./n2,c2./n2)/(2*pi),1);
+    npercycle(1:length(c1),i) = n2 / opt.navg;
 end
 
 data.spikeRcycle = Rcycle;
 data.spikephasecycle = phasecycle;
+data.nspikespercycle = npercycle;
 
 if (length(data.amp) == length(data.t))
     data.ampcycle = interp1(data.t,data.amp, data.stimcyclet);

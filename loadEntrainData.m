@@ -89,6 +89,7 @@ switch treatments.type{ind}
         data.cycle = floor(phase)+1;
         data.stimfreq = deriv(t,phase);
         data.amp = treatments.amplitudedeg(ind);
+        data.noise = treatments.noisestddeg(ind);
     
     case 'AmplitudeSweep'
         phase = (t - startt) * treatments.frequencyhz(ind);

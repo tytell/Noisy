@@ -89,9 +89,14 @@ end
 data.spikephase = mod(data.spikephase,1);
 data.burstphase = mod(data.burstphase,1);
 
-ct0 = data.t(1) - data.phase(1)/data.stimfreq;
-ct1 = data.t(end)+1/data.stimfreq;
-data.stimcyclet = (ct0:1/data.stimfreq:ct1)';
+if (length(data.stimfreq) == 1)
+    ct0 = data.t(1) - data.phase(1)/data.stimfreq;
+    ct1 = data.t(end)+1/data.stimfreq;
+    data.stimcyclet = (ct0:1/data.stimfreq:ct1)';
+else
+    data.stimcyclet = interp1(uphase(goodphase),data.t(goodphase),floor(min(uphase)):ceil(max(uphase)), ...
+        'linear','extrap')';
+end
 
 [data.burstspercycle,data.burstcycle] = histc(data.burstt,data.stimcyclet);
 data.burstcycle(data.burstcycle == 0) = NaN;
