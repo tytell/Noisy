@@ -17,7 +17,7 @@ for i = 1:size(data.spiket,2)
     good = isfinite(data.spiket(:,i));
     spikecycle(good,i) = interp1(data.t(goodcycle), data.cycle(goodcycle), data.spiket(good,i));
     
-    good = isfinite(spikecycle(good,i));
+    good = isfinite(spikecycle(:,i));
     c1 = accumarray(spikecycle(good,i), data.spikephase(good,i), [], ...
         @(x) sum(cos(2*pi*x)));
     s1 = accumarray(spikecycle(good,i), data.spikephase(good,i), [], ...

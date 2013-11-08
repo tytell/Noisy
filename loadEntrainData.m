@@ -68,17 +68,14 @@ switch treatments.type{ind}
                 %linearly interpolate the true zero crossings
                 tup = t(upind) + dt/(ang(upind+1) - ang(upind)) * (0 - ang(upind));
                 tdown = t(downind) + dt/(ang(downind+1) - ang(downind)) * (0 - ang(downind));
-                
-                %ascending zero crossing should have phase 0,1,...
-                phup = (0:length(tup)-1)';
-                %descending should be phase 0.5,1.5,...
-                phdown = (0.5:length(tdown))';
-                
+                               
                 tzero = [tup; tdown];
                 [tzero,ord] = sort(tzero);
-                phzero = [phup; phdown];
-                phzero = phzero(ord);
-                phzero = unmod(phzero,1);
+                if (tup(1) < tdown(1))
+                    phzero = (0:length(tzero)-1)'*0.5;
+                else
+                    phzero = (1:length(tzero))'*0.5;
+                end
                 
                 span = (t >= tzero(1)) & (t <= tzero(end));
                 phase = NaN(size(t));
