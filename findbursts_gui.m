@@ -90,9 +90,8 @@ data.spikephase = mod(data.spikephase,1);
 data.burstphase = mod(data.burstphase,1);
 
 if (length(data.stimfreq) == 1)
-    ct0 = data.t(1) - data.phase(1)/data.stimfreq;
-    ct1 = data.t(end)+1/data.stimfreq;
-    data.stimcyclet = (ct0:1/data.stimfreq:ct1)';
+    ncycle = max(data.cycle);
+    data.stimcyclet = (0:1/data.stimfreq:ncycle-1)';
 else
     data.stimcyclet = interp1(uphase(goodphase),data.t(goodphase),floor(min(uphase)):ceil(max(uphase)), ...
         'linear','extrap')';
