@@ -19,7 +19,7 @@ end
 burston = catuneven(1,data.burst.on)';
 burstoff = catuneven(1,data.burst.off)';
 
-stimdur = mode(round(diff(data.Time)/stimper));
+stimdur = mode(round(diff(data.Time)/stimper)) * stimper;
 
 nstim = max(data.stimcycle);
 data.tstim = [];
@@ -32,14 +32,13 @@ data.burstonstim = [];
 data.burstdurstim = [];
 data.burstphasestim = [];
 for i = 1:nstim
-    tstart = data.Time(i) + data.BeforeDurSec;
-    tend = tstart + stimdur;
-    
+    tstart = data.Time(i);
     %check that we're close to an even number of cycles, then round
     %to an even number of cycles
     assert(abs(round(tstart/stimper)*stimper - tstart) < 0.1*stimper);
-    tstart = round(tstart/stimper) * stimper;
-
+    tstart = round(tstart/stimper) * stimper + data.BeforeDurSec;
+    tend = tstart + stimdur;
+    
     t0 = tstart + 1/data.SinFreqStartHz;    % 1 period later
     tstart = tstart - opt.prestimcycles/data.SinFreqStartHz;
     
@@ -59,10 +58,17 @@ for i = 1:nstim
         spiket1 = catuneven(2,spiket1,data.spiket(isstim1,j));
         
         isstim1 = (data.burstt(:,j) >= tstart) & (data.burstt(:,j) <= tend);
-        burstt1 = catuneven(2,burstt1,data.burstt(isstim1,j));
-        burston1 = catuneven(2,burston1,burston(isstim1,j));
-        burstdur1 = catuneven(2,burstdur1,burstoff(isstim1,j) - burston(isstim1,j));
-        burstphase1 = catuneven(2,burstphase1,data.burstphase(isstim1,j));
+        if any(isstim1)
+            burstt1 = catuneven(2,burstt1,data.burstt(isstim1,j));
+            burston1 = catuneven(2,burston1,burston(isstim1,j));
+            burstdur1 = catuneven(2,burstdur1,burstoff(isstim1,j) - burston(isstim1,j));
+            burstphase1 = catuneven(2,burstphase1,data.burstphase(isstim1,j));
+        else
+            burstt1 = catuneven(2,burstt1,NaN);
+            burston1 = catuneven(2,burston1,NaN);
+            burstdur1 = catuneven(2,burstdur1,NaN);
+            burstphase1 = catuneven(2,burstphase1,NaN);
+        end
     end
     
     spiket1 = spiket1 - t0;

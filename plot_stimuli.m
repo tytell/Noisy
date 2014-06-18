@@ -97,7 +97,7 @@ for i = 1:nchan
         if opt.meanburstphase
             axis tight;
             xl = xlim;
-            stimper = data.SinFreqStartHz;
+            stimper = 1/data.SinFreqStartHz;
             xl = round(xl/stimper)*stimper;
             
             mnphase1 = (xl(1)+mnphase(i)*stimper):stimper:xl(2);
