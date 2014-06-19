@@ -175,6 +175,20 @@ switch stimtype
         data.stimfreq = data.SinFreqStartHz;
         data.amp = data.SinAmpStartDeg;
         data.noise = data.NoiseAmpStartDeg;
+    case 'Shifts'
+        data.phase = phase;
+        data.stimphase = stimphase;
+        data.cycle = cycle;
+        data.stimcycle = stimcycle;
+
+        if ceil(max(stimphase)) == 1
+            cyclesperstim = mode(ceil(diff(data.Time)*data.SinFreqStartHz));
+            data.stimphase = data.stimphase * cyclesperstim - 1;
+        end
+        
+        data.stimfreq = data.SinFreqStartHz;
+        data.amp = data.SinAmpStartDeg;
+        data.noise = data.NoiseAmpStartDeg;
     otherwise
         error('Unrecognized treatment type: %s',stimtype);
 end

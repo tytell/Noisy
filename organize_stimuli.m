@@ -31,6 +31,7 @@ data.burstcyclestim = [];
 data.burstonstim = [];
 data.burstdurstim = [];
 data.burstphasestim = [];
+data.burstindstim = [];
 for i = 1:nstim
     tstart = data.Time(i);
     %check that we're close to an even number of cycles, then round
@@ -53,6 +54,7 @@ for i = 1:nstim
     burston1 = [];
     burstdur1 = [];
     burstphase1 = [];
+    burstind1 = [];
     for j = 1:nchan
         isstim1 = (data.spiket(:,j) >= tstart) & (data.spiket(:,j) <= tend);
         spiket1 = catuneven(2,spiket1,data.spiket(isstim1,j));
@@ -63,11 +65,13 @@ for i = 1:nstim
             burston1 = catuneven(2,burston1,burston(isstim1,j));
             burstdur1 = catuneven(2,burstdur1,burstoff(isstim1,j) - burston(isstim1,j));
             burstphase1 = catuneven(2,burstphase1,data.burstphase(isstim1,j));
+            burstind1 = catuneven(2,burstind1,find(isstim1));
         else
             burstt1 = catuneven(2,burstt1,NaN);
             burston1 = catuneven(2,burston1,NaN);
             burstdur1 = catuneven(2,burstdur1,NaN);
             burstphase1 = catuneven(2,burstphase1,NaN);
+            burstind1 = catuneven(2,burstind1,NaN);
         end
     end
     
@@ -84,6 +88,7 @@ for i = 1:nstim
     data.burstonstim = catuneven(3,data.burstonstim,burston1);
     data.burstdurstim = catuneven(3,data.burstdurstim,burstdur1);
     data.burstphasestim = catuneven(3,data.burstphasestim,burstphase1);
+    data.burstindstim = catuneven(3,data.burstindstim,burstind1);
 end
 
 
