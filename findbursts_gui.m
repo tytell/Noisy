@@ -63,6 +63,14 @@ data.spikethreshold = gdata.thresh;
 
 data.spiket = catuneven(2,data.spiket{:});
 data.spikeamp = catuneven(2,data.spikeamp{:});
+for i = 1:length(data.burst)
+    if isempty(data.burst(i).ctr)
+        data.burst(i).ctr = NaN;
+    end
+    if isempty(data.burst(i).nspike)
+        data.burst(i).nspike = NaN;
+    end
+end
 ctr1 = {data.burst.ctr};
 ctr1 = cellfun(@(x) x', ctr1, 'UniformOutput',false);
 data.burstt = catuneven(2,ctr1{:});
@@ -77,18 +85,22 @@ uphase = unwrap(2*pi*data.phase) / (2*pi);
 goodphase = isfinite(uphase) & [true; diff(uphase) > 0];
 for i = 1:size(data.spiket,2)
     good = isfinite(data.spiket(:,i));
-    data.spikephase(good,i) = interp1(data.t(goodphase),uphase(goodphase), data.spiket(good,i));
-
-    cycle1 = floor(data.spikephase(good,i));
-    data.spikecyclet(good,i) = interp1(uphase(goodphase),data.t(goodphase), cycle1);
+    if any(good)
+        data.spikephase(good,i) = interp1(data.t(goodphase),uphase(goodphase), data.spiket(good,i));
+        
+        cycle1 = floor(data.spikephase(good,i));
+        data.spikecyclet(good,i) = interp1(uphase(goodphase),data.t(goodphase), cycle1);
+    end
     
     good = isfinite(data.burstt(:,i));
-    data.burstphase(good,i) = interp1(data.t(goodphase),uphase(goodphase), data.burstt(good,i));
-    
-    if isfield(data,'stimphase')
-        goodphase = isfinite(data.stimphase) & [true; diff(data.stimphase) > 0];
-        data.burststimphase(good,i) = interp1(data.t(goodphase),data.stimphase(goodphase), data.burstt(good,i));
-        data.burststimcycle(good,i) = interp1(data.t(goodphase),data.stimcycle(goodphase), data.burstt(good,i));
+    if any(good)
+        data.burstphase(good,i) = interp1(data.t(goodphase),uphase(goodphase), data.burstt(good,i));
+        
+        if isfield(data,'stimphase')
+            goodphase = isfinite(data.stimphase) & [true; diff(data.stimphase) > 0];
+            data.burststimphase(good,i) = interp1(data.t(goodphase),data.stimphase(goodphase), data.burstt(good,i));
+            data.burststimcycle(good,i) = interp1(data.t(goodphase),data.stimcycle(goodphase), data.burstt(good,i));
+        end
     end
 end
 

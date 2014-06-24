@@ -176,15 +176,43 @@ switch stimtype
         data.amp = data.SinAmpStartDeg;
         data.noise = data.NoiseAmpStartDeg;
     case 'Shifts'
-        data.phase = phase;
-        data.stimphase = stimphase;
-        data.cycle = cycle;
-        data.stimcycle = stimcycle;
+        if isempty(phase)
+            stimper = 1/data.SinFreqStartHz;
+            
+            phase = NaN(size(data.t));
+            issig = (data.t >= data.BeforeDurSec) & (data.t < data.StimDurSec-data.AfterDurSec);
+            phase(issig) = (data.t(issig) - data.BeforeDurSec)/stimper;
+            
+            dt = data.t(2) - data.t(1);
+            
+            indshift = round((data.Time + data.BeforeDurSec + data.Phase*stimper)/dt) + 1;
+            indzero = round((data.Time + data.BeforeDurSec + data.Phase*stimper + (1 - data.Phase-data.PhaseChange)*stimper)/dt) + 1;
+            
+            dphase = zeros(size(phase));
+            dphase(indshift) = data.PhaseChange;
+            dphase = cumsum(dphase);
+            phase = phase + dphase;
 
-        if ceil(max(stimphase)) == 1
-            cyclesperstim = mode(ceil(diff(data.Time)*data.SinFreqStartHz));
-            data.stimphase = data.stimphase * cyclesperstim - 1;
+            stimphase = NaN(size(data.t));
+            stimcycle = NaN(size(data.t));
+            tt = [data.Time; data.Time(end)+10*stimper] + data.BeforeDurSec;
+            for i = 1:length(tt)-1
+                isstim = (data.t >= tt(i)) & (data.t < tt(i+1));
+                stimphase(isstim) = phase(isstim);
+                stimphase(isstim) = stimphase(isstim) - phase(indzero(i));
+                stimcycle(isstim) = i;
+            end
+
+            cycle = floor(phase);
+            phase = mod(phase,1);
+            
+                
         end
+            
+        data.phase = phase;
+        data.cycle = cycle;
+        data.stimphase = stimphase;
+        data.stimcycle = stimcycle;
         
         data.stimfreq = data.SinFreqStartHz;
         data.amp = data.SinAmpStartDeg;

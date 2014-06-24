@@ -21,6 +21,29 @@ burstoff = catuneven(1,data.burst.off)';
 
 stimdur = mode(round(diff(data.Time)/stimper)) * stimper;
 
+switch data.StimulusType
+    case 'Pulses'
+        %check that we're close to an even number of cycles, then round
+        %to an even number of cycles
+        tstart = data.Time;
+        assert(all(abs(round(tstart/stimper)*stimper - tstart) < 0.1*stimper));
+        tstart = round(tstart/stimper) * stimper + data.BeforeDurSec;
+        tend = tstart + stimdur;
+
+        t0 = tstart + 1/data.SinFreqStartHz;    % 1 period later
+        tstart = tstart - opt.prestimcycles/data.SinFreqStartHz;
+        issamedur = true;
+
+    case 'Shifts'
+        stimdur = stimdur - stimper;
+        
+        t0 = data.Time + data.BeforeDurSec + data.Phase*stimper + ...
+            (1 - data.Phase-data.PhaseChange)*stimper;
+        tend = t0 + stimdur;
+        tstart = t0 - data.PhaseChange*stimper - opt.prestimcycles*stimper;
+        issamedur = false;
+end
+
 nstim = max(data.stimcycle);
 data.tstim = [];
 data.sigstim = [];
@@ -33,21 +56,11 @@ data.burstdurstim = [];
 data.burstphasestim = [];
 data.burstindstim = [];
 for i = 1:nstim
-    tstart = data.Time(i);
-    %check that we're close to an even number of cycles, then round
-    %to an even number of cycles
-    assert(abs(round(tstart/stimper)*stimper - tstart) < 0.1*stimper);
-    tstart = round(tstart/stimper) * stimper + data.BeforeDurSec;
-    tend = tstart + stimdur;
-    
-    t0 = tstart + 1/data.SinFreqStartHz;    % 1 period later
-    tstart = tstart - opt.prestimcycles/data.SinFreqStartHz;
-    
-    isstim = (data.t > tstart) & (data.t <= tend);
+    isstim = (data.t > tstart(i)) & (data.t <= tend(i));
     
     sig1 = data.sig(isstim,:);
     ang1 = data.ang(isstim);
-    t1 = data.t(isstim) - t0;
+    t1 = data.t(isstim) - t0(i);
     
     spiket1 = [];
     burstt1 = [];
@@ -56,10 +69,10 @@ for i = 1:nstim
     burstphase1 = [];
     burstind1 = [];
     for j = 1:nchan
-        isstim1 = (data.spiket(:,j) >= tstart) & (data.spiket(:,j) <= tend);
+        isstim1 = (data.spiket(:,j) >= tstart(i)) & (data.spiket(:,j) <= tend(i));
         spiket1 = catuneven(2,spiket1,data.spiket(isstim1,j));
         
-        isstim1 = (data.burstt(:,j) >= tstart) & (data.burstt(:,j) <= tend);
+        isstim1 = (data.burstt(:,j) >= tstart(i)) & (data.burstt(:,j) <= tend(i));
         if any(isstim1)
             burstt1 = catuneven(2,burstt1,data.burstt(isstim1,j));
             burston1 = catuneven(2,burston1,burston(isstim1,j));
@@ -75,11 +88,15 @@ for i = 1:nstim
         end
     end
     
-    spiket1 = spiket1 - t0;
-    burstt1 = burstt1 - t0;
-    burston1 = burston1 - t0;
+    spiket1 = spiket1 - t0(i);
+    burstt1 = burstt1 - t0(i);
+    burston1 = burston1 - t0(i);
     
-    data.tstim = t1;
+    if issamedur
+        data.tstim = t1;
+    else
+        data.tstim = catuneven(3,data.tstim,t1);
+    end
     data.sigstim = catuneven(3,data.sigstim,sig1);
     data.angstim = catuneven(3,data.angstim,ang1);
     data.spiketstim = catuneven(3,data.spiketstim,spiket1);
