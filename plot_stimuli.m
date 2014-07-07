@@ -1,9 +1,11 @@
 function plot_stimuli(data, varargin)
 
-assert(ismember(data.StimulusType, {'Pulses'}));
+assert(ismember(data.StimulusType, {'Pulses','Shifts'}));
 
 opt.phase = [];
 opt.direction = [];
+opt.startphase = [];
+opt.phasechange = [];
 opt.channel = [];
 opt.raster = true;
 opt.raw = true;
@@ -22,16 +24,43 @@ end
 opt = parsevarargin(opt,varargin(p:end), 2);
 
 if (isempty(ind))
-    if isempty(opt.phase)
-        opt.phase = [0 1];
-    elseif numel(opt.phase == 1)
-        opt.phase = [opt.phase opt.phase];
-    end
+    switch data.StimulusType
+        case 'Pulses'
+            if isempty(opt.phase)
+                opt.phase = [0 1];
+            elseif numel(opt.phase) == 1
+                opt.phase = [opt.phase opt.phase];
+            end
+            
+            if isempty(opt.direction)
+                opt.direction = [-1 1];
+            elseif numel(opt.direction) == 1
+                opt.direction = [opt.direction opt.direction];
+            end
+            
+            ind = find((data.Phase >= opt.phase(1)) & (data.Phase <= opt.phase(2)) & ...
+                (data.Direction >= opt.direction(1)) & (data.Direction <= opt.direction(2)));
+            
+        case 'Shifts'
+            if isempty(opt.startphase) && ~isempty(opt.phase)
+                opt.startphase = opt.phase;
+            end
+            if isempty(opt.startphase)
+                opt.startphase = [0 1];
+            end
+            if numel(opt.startphase) == 1
+                opt.startphase = opt.startphase([1 1]);
+            end
 
-    if isempty(opt.direction)
-        opt.direction = [-1 1];
-    elseif numel(opt.direction == 1)
-        opt.direction = [opt.direction opt.direction];
+            if isempty(opt.phasechange)
+                opt.phasechange = [0 1];
+            end
+            if numel(opt.phasechange) == 1
+                opt.phasechange = opt.phasechange([1 1]);
+            end
+            
+            ind = find((data.Phase >= opt.startphase(1)) & (data.Phase <= opt.startphase(2)) & ...
+                (data.PhaseChange >= opt.phasechange(1)) & (data.PhaseChange <= opt.phasechange(2)));
     end
     
     ind = find((data.Phase >= opt.phase(1)) & (data.Phase <= opt.phase(2)) & ...
@@ -67,6 +96,12 @@ if opt.meanburstphase
         mnphase1 = angmean(2*pi*burstphase1(goodcyc));
         mnphase(c) = mod(mnphase1/(2*pi),1);
     end
+end
+
+if size(data.tstim,3) > 1
+    t1 = squeeze(data.tstim(:,1,ind));
+else
+    t1 = data.tstim;
 end
 
 clf;
@@ -109,10 +144,20 @@ for i = 1:nchan
             axis tight;
             xl = xlim;
             stimper = 1/data.SinFreqStartHz;
-            xl = round(xl/stimper)*stimper;
+            xl = round(xl/stimper);
             
-            mnphase1 = (xl(1)+mnphase(i)*stimper):stimper:xl(2);
-            vertplot(mnphase1,'k-');
+            mnphase1 = (xl(1)+mnphase(i)):1:xl(2);
+            if strcmp(data.StimulusType,'Shifts')
+                isbefore = mnphase1 < 0;
+                isduring = (mnphase1 >= 0) & (mnphase1 <= 1);
+                mnphase1(isbefore) = mnphase1(isbefore) + data.PhaseChange(ind(1));
+                vertplot(mnphase1(~isduring)*stimper,'k-');
+                vertplot(mnphase1(isduring)*stimper,'k--');
+                vertplot((mnphase1(isduring) + data.PhaseChange(ind(1)))*stimper,'k--');
+            else
+                mnphase1 = mnphase1 * stimper;
+                vertplot(mnphase1,'k-');
+            end
         end
     end
     
