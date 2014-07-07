@@ -84,6 +84,8 @@ switch stimtype
         data.stimfreq = data.SinFreqStartHz;
         data.amp = data.SinAmpStartDeg;
         data.noise = data.NoiseAmpStartDeg;
+        data.stimphase = data.phase;
+        data.stimcycle = ones(size(data.phase));
         
     case 'FrequencySweep'
         if isempty(phase)
@@ -175,6 +177,7 @@ switch stimtype
         data.stimfreq = data.SinFreqStartHz;
         data.amp = data.SinAmpStartDeg;
         data.noise = data.NoiseAmpStartDeg;
+
     case 'Shifts'
         data.phase = phase;
         data.stimphase = stimphase;

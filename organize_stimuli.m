@@ -21,7 +21,7 @@ burstoff = catuneven(1,data.burst.off)';
 
 stimdur = mode(round(diff(data.Time)/stimper)) * stimper;
 
-nstim = max(data.stimcycle);
+nstim = length(data.Time);
 data.tstim = [];
 data.sigstim = [];
 data.angstim = [];
@@ -79,7 +79,9 @@ for i = 1:nstim
     burstt1 = burstt1 - t0;
     burston1 = burston1 - t0;
     
-    data.tstim = t1;
+    if (length(t1) > length(data.tstim))
+        data.tstim = t1;
+    end
     data.sigstim = catuneven(3,data.sigstim,sig1);
     data.angstim = catuneven(3,data.angstim,ang1);
     data.spiketstim = catuneven(3,data.spiketstim,spiket1);

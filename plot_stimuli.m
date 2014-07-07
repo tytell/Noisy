@@ -9,6 +9,7 @@ opt.raster = true;
 opt.raw = true;
 opt.bursts = true;
 opt.meanburstphase = true;
+opt.spacing = 0;
 
 if (isnumeric(varargin{1}))
     ind = varargin{1};
@@ -35,6 +36,13 @@ if (isempty(ind))
     
     ind = find((data.Phase >= opt.phase(1)) & (data.Phase <= opt.phase(2)) & ...
         (data.Direction >= opt.direction(1)) & (data.Direction <= opt.direction(2)));
+    if isempty(ind)
+        error('No stimuli found!');
+    else
+        fprintf('Found stimuli: ');
+        fprintf('%d ',ind);
+        fprintf('\n');
+    end
 end    
 
 if isempty(opt.channel)
@@ -64,17 +72,20 @@ end
 clf;
 for i = 1:nchan
     c = opt.channel(i);
+
     
     h(i) = subplot(nchan+1,1, i);
     sig1 = squeeze(data.sigstim(:,c,ind));
+    mid1 = diff(prctile(sig1(:),[5 95]));
     if opt.raw
         good = any(isfinite(sig1),2);
-        plot(data.tstim(good), sig1(good,:));
+        plot(data.tstim(good), sig1(good,:) + ...
+            repmat(0:length(ind)-1,[sum(good) 1])*mid1*opt.spacing);
     end
     
     d = max(abs(sig1(:)));
     spiket1 = squeeze(data.spiketstim(:,c,ind));
-    spikey1 = d + (0:nrep-1)*d/5;
+    spikey1 = mid1*opt.spacing*(length(ind)-1) + d + (0:nrep-1)*d/5;
 
     if opt.raster
         addraster(spiket1, spikey1);
