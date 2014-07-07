@@ -55,6 +55,8 @@ data.burstonstim = [];
 data.burstdurstim = [];
 data.burstphasestim = [];
 data.burstindstim = [];
+data.burstprepoststim = [];
+        
 for i = 1:nstim
     isstim = (data.t > tstart(i)) & (data.t <= tend(i));
     
@@ -68,15 +70,27 @@ for i = 1:nstim
     burstdur1 = [];
     burstphase1 = [];
     burstind1 = [];
+    prepost1 = [];
     for j = 1:nchan
         isstim1 = (data.spiket(:,j) >= tstart(i)) & (data.spiket(:,j) <= tend(i));
         spiket1 = catuneven(2,spiket1,data.spiket(isstim1,j));
         
         isstim1 = (data.burstt(:,j) >= tstart(i)) & (data.burstt(:,j) <= tend(i));
         if any(isstim1)
+            bon1 = burston(isstim1,j);
+            boff1 = burstoff(isstim1,j);
+
+            prepost2 = zeros(size(bon1));
+            prepost2(boff1 < t0(i)-data.Duration(i)/2) = -1; 
+            prepost2(bon1 > t0(i)+data.Duration(i)/2) = 1;
+            k = first(prepost2 == 1);
+            prepost2(k+1:end) = 2;
+            
+            prepost1 = catuneven(2,prepost1,prepost2);
+            
             burstt1 = catuneven(2,burstt1,data.burstt(isstim1,j));
-            burston1 = catuneven(2,burston1,burston(isstim1,j));
-            burstdur1 = catuneven(2,burstdur1,burstoff(isstim1,j) - burston(isstim1,j));
+            burston1 = catuneven(2,burston1,bon1);
+            burstdur1 = catuneven(2,burstdur1,boff1 - bon1);
             burstphase1 = catuneven(2,burstphase1,data.burstphase(isstim1,j));
             burstind1 = catuneven(2,burstind1,find(isstim1));
         else
@@ -85,6 +99,7 @@ for i = 1:nstim
             burstdur1 = catuneven(2,burstdur1,NaN);
             burstphase1 = catuneven(2,burstphase1,NaN);
             burstind1 = catuneven(2,burstind1,NaN);
+            prepost1 = catuneven(2,prepost1,NaN);
         end
     end
     
@@ -101,10 +116,11 @@ for i = 1:nstim
     data.angstim = catuneven(3,data.angstim,ang1);
     data.spiketstim = catuneven(3,data.spiketstim,spiket1);
     data.bursttstim = catuneven(3,data.bursttstim,burstt1);
-    data.burstcyclestim = catuneven(3,data.burstcyclestim, floor(burstt1));
+    data.burstcyclestim = catuneven(3,data.burstcyclestim, floor(burstt1/stimper));
     data.burstonstim = catuneven(3,data.burstonstim,burston1);
     data.burstdurstim = catuneven(3,data.burstdurstim,burstdur1);
     data.burstphasestim = catuneven(3,data.burstphasestim,burstphase1);
+    data.burstprepoststim = catuneven(3,data.burstprepoststim,prepost1);
     data.burstindstim = catuneven(3,data.burstindstim,burstind1);
 end
 

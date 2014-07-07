@@ -47,6 +47,7 @@ burstspikerate(good) = burstspikerate0(data.burstindstim(good));
 
 cycle = data.burstcyclestim;
 phase = data.burstphasestim;
+prepost = data.burstprepoststim;
 
 expectedt = (cycle + repmat(mnphase,[size(cycle,1) 1 size(cycle,3)]))*stimper;
 dphase = (data.bursttstim - expectedt)/stimper;
@@ -60,6 +61,7 @@ cycle(isextra) = cycle(isextra) + 0.5;
 
 cycle = permute(cycle,[1 3 2]);
 phase = permute(phase,[1 3 2]);
+prepost = permute(prepost,[1 3 2]);
 burstfreq = permute(burstfreq,[1 3 2]);
 dphase = permute(dphase,[1 3 2]);
 donphase = permute(donphase,[1 3 2]);
@@ -68,6 +70,7 @@ burstspikerate = permute(burstspikerate, [1 3 2]);
 
 cycle2 = unique(cycle(~isnan(cycle)));
 phase2 = NaN(length(cycle2),size(phase,2),nchan);
+prepost2 = NaN(size(phase2));
 burstfreq2 = NaN(size(phase2));
 dphase2 = NaN(size(phase2));
 donphase2 = NaN(size(phase2));
@@ -79,6 +82,7 @@ for c = 1:nchan
             iscycle = cycle(:,i,c) == cycle2(j);
             if sum(iscycle) == 1
                 phase2(j,i,c) = phase(iscycle,i,c);
+                prepost2(j,i,c) = prepost(iscycle,i,c);
                 burstfreq2(j,i,c) = burstfreq(iscycle,i,c);
                 dphase2(j,i,c) = dphase(iscycle,i,c);
                 donphase2(j,i,c) = donphase(iscycle,i,c);
@@ -91,7 +95,7 @@ end
 
 cycle2 = repmat(cycle2,[1 size(phase,2)]);
 
-C = cat(4,phase2,burstfreq2,dphase2, donphase2, dur2, burstspikerate2);
+C = cat(4,prepost2,phase2,burstfreq2,dphase2, donphase2, dur2, burstspikerate2);
 
 stimphase = repmat(data.Phase',[size(cycle2,1) 1]);
 stimdirec = repmat(data.Direction',[size(cycle2,1) 1]);
@@ -101,11 +105,11 @@ stimnum = repmat(1:length(data.Phase),[size(cycle2,1) 1]);
 
 X = [stimnum(:) stimphase(:) stimdirec(:) stimamp(:) stimdur(:) cycle2(:)];
 lab = {'StimNum','StimPhase','StimDirec','StimAmp','StimDur','CycleNum'};
-chanlab = {'Phase','Freq','DPhase','DOnPhase','Dur','SpikeRate'};
+chanlab = {'CycleType','Phase','Freq','DPhase','DOnPhase','Dur','SpikeRate'};
 
 
 tplt = '%d,%.3f,%d,%.1f,%.2f,%.1f';
-Ctplt = '%.3f,%.2f,%.3f,%.3f,%.3f,%.2f';
+Ctplt = '%d,%.3f,%.2f,%.3f,%.3f,%.3f,%.2f';
 
 C = reshape(C,[size(X,1) nchan size(C,4)]);
 C = permute(C,[1 3 2]);
