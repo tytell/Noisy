@@ -108,7 +108,9 @@ for i = 1:nstim
     burston1 = burston1 - t0(i);
     
     if issamedur
-        data.tstim = t1;
+        if (length(t1) > length(data.tstim))
+            data.tstim = t1;
+        end
     else
         data.tstim = catuneven(3,data.tstim,t1);
     end

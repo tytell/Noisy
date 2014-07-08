@@ -63,8 +63,6 @@ if (isempty(ind))
                 (data.PhaseChange >= opt.phasechange(1)) & (data.PhaseChange <= opt.phasechange(2)));
     end
     
-    ind = find((data.Phase >= opt.phase(1)) & (data.Phase <= opt.phase(2)) & ...
-        (data.Direction >= opt.direction(1)) & (data.Direction <= opt.direction(2)));
     if isempty(ind)
         error('No stimuli found!');
     else
@@ -108,7 +106,6 @@ clf;
 for i = 1:nchan
     c = opt.channel(i);
 
-    
     h(i) = subplot(nchan+1,1, i);
     sig1 = squeeze(data.sigstim(:,c,ind));
     mid1 = diff(prctile(sig1(:),[5 95]));
@@ -125,7 +122,7 @@ for i = 1:nchan
     if opt.raster
         addraster(spiket1, spikey1);
     end
-
+    
     if opt.bursts
         burst1 = cat(2,data.burstonstim(:,c,ind),...
             data.burstonstim(:,c,ind)+data.burstdurstim(:,c,ind),...
@@ -168,5 +165,7 @@ h(i+1) = subplot(nchan+1,1, nchan+1);
 ang1 = squeeze(data.angstim(:,1,ind));
 good = any(isfinite(ang1),2);
 plot(data.tstim(good), ang1(good,:));
+xl = [min(data.tstim(good)) max(data.tstim(good))];
 
 linkaxes(h,'x');
+xlim(xl);
