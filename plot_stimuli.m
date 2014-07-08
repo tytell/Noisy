@@ -111,7 +111,7 @@ for i = 1:nchan
     mid1 = diff(prctile(sig1(:),[5 95]));
     if opt.raw
         good = any(isfinite(sig1),2);
-        plot(data.tstim(good), sig1(good,:) + ...
+        plot(t1(good,:), sig1(good,:) + ...
             repmat(0:length(ind)-1,[sum(good) 1])*mid1*opt.spacing);
     end
     
