@@ -17,7 +17,7 @@ stimper = 1 / data.SinFreqStartHz;
 
 ncycle = mode(flatten(max(data.burstcyclestim)));
 
-onphase = mod(data.burstonstim,stimper);
+onphase = mod(data.burstonstim/stimper,1);
 
 burstfreq = NaN(size(data.bursttstim));
 burstfreq(1:end-1,:,:) = 1 ./ diff(data.bursttstim,[],1);
@@ -64,12 +64,10 @@ cycle = data.burstcyclestim;
 phase = data.burstphasestim;
 prepost = data.burstprepoststim;
 
-expectedt = (cycle + repmat(mnphase,[size(cycle,1) 1 size(cycle,3)]))*stimper;
-dphase = (data.bursttstim - expectedt)/stimper;
+dphase = angdiff(2*pi*phase,2*pi*repmat(mnphase,[size(phase,1) 1 size(phase,3)])) / (2*pi);
 dphasez = dphase ./ repmat(stdphase,[size(cycle,1) 1 size(cycle,3)]);
 
-expectedon = (cycle + repmat(mnonphase,[size(cycle,1) 1 size(cycle,3)]))*stimper;
-donphase = (data.burstonstim - expectedon)/stimper;
+donphase = angdiff(2*pi*onphase,2*pi*repmat(mnonphase,[size(phase,1) 1 size(phase,3)])) / (2*pi);
 donphasez = donphase ./ repmat(stdonphase,[size(cycle,1) 1 size(cycle,3)]);
 
 dur = data.burstdurstim / stimper;
