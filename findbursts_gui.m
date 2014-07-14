@@ -18,9 +18,13 @@ end
 nchan = size(data.sig,2);
 gdata.chan = 1;
 if (isempty(opt.threshold))
-    gdata.thresh = 2*nanstd(data.sig);
-else
+    gdata.thresh = [-1; 1] * 2*nanstd(data.sig);
+elseif (size(opt.threshold,1) == 2) && (size(opt.threshold,2) == nchan)
     gdata.thresh = opt.threshold;
+elseif length(opt.threshold) == nchan
+    gdata.thresh = [-1; 1]*abs(opt.threshold(:)');
+else
+    error('Unrecognized threshold');
 end
 if (isempty(opt.interburstdur))
     gdata.interburst = 0.3*ones(1,nchan);
@@ -31,6 +35,10 @@ if (isempty(opt.minspikes))
     gdata.minspikes = 2*ones(1,nchan);
 else
     gdata.minspikes = opt.minspikes;
+end
+
+if (isfield(data,'burst'))
+    data = rmfield(data,'burst');
 end
 gdata.data = data;
 gdata.hspikes = -1;
@@ -123,7 +131,8 @@ data.burstcyclet(good) = data.stimcyclet(data.burstcycle(good));
 
 if (~opt.quiet)
     ibdtxt = sprintf('%g ',gdata.interburst);
-    thtxt = sprintf('%g ',gdata.thresh);
+    thtxt = sprintf('%g ',gdata.thresh(1,:));
+    thtxt = [thtxt(1:end-1) ';' sprintf('%g ',gdata.thresh(2,:))];
     mstxt = sprintf('%g ',gdata.minspikes);
     
     fprintf('%s = findbursts_gui(%s, ''threshold'', [%s], ''interburstdur'', [%s], ''minspikes'', [%s], ''quiet'')', ...
@@ -146,10 +155,7 @@ if (any(ismember(type, {'all','plot'})))
     plot(ax, d.t,d.sig(:,c),'k-', 'HitTest','off');
     axis(ax, 'tight');
 
-    xl = get(ax,'XLim');
-    gdata.hthreshln = addplot(ax, xl,gdata.thresh([c c]),'g--', ...
-        xl,-gdata.thresh([c c]),'g--', ...
-        'ButtonDownFcn',@on_click_thresh_line);
+    xl = get(ax,'XLim');    
     if (diff(xl) > 10)
         fac = diff(xl)/10;
         zoom(ax,'xon');
@@ -190,6 +196,13 @@ if (any(ismember(type, {'all','bursts'})))
     end
 end
 
+if (any(ismember(type, {'all','plot'})))
+    xl = get(ax,'XLim');
+    gdata.hthreshln = addplot(ax, xl,gdata.thresh(1,[c c]),'g--', ...
+        xl,gdata.thresh(2,[c c]),'g--', ...
+        'ButtonDownFcn',@on_click_thresh_line);
+end
+
 %*************************************************************************
 function gdata = update_spikes(gdata, doall)
 
@@ -201,7 +214,7 @@ else
 end
 
 for i = c
-    spikeind = findspikes(d.sig(:,i), gdata.thresh(i));
+    spikeind = findspikes(d.sig(:,i), gdata.thresh(:,i));
     d.spiket{i} = d.t(spikeind{1});
     d.spikeamp{i} = d.sig(spikeind{1},i);
 end
@@ -229,35 +242,56 @@ gdata.data = d;
 function on_click_thresh_line(obj, event)
 
 gdata = guidata(obj);
-set(gdata.figure, 'WindowButtonMotionFcn',@on_drag_thresh_line, ...
-    'WindowButtonUpFcn',@on_button_up_thresh_line);
+yd = get(obj,'YData');
+set(gdata.figure, 'WindowButtonMotionFcn',@(o,e) on_drag_thresh_line(o,e,sign(yd(1))), ...
+    'WindowButtonUpFcn',@(o,e) on_button_up_thresh_line(o,e,sign(yd(1))));
 
 %*************************************************************************
-function on_drag_thresh_line(obj, event)
+function on_drag_thresh_line(obj, event, s)
 
 gdata = guidata(obj);
 
 c = get(gdata.axes, 'CurrentPoint');
-y = abs(c(1,2));
-set(gdata.hthreshln(1), 'YData',[y y]);
-set(gdata.hthreshln(2), 'YData',[-y -y]);
+y = c(1,2);
+if (s > 0)
+    if (y > 0)
+        set(gdata.hthreshln(2), 'YData',[y y]);
+    end
+else
+    if (y < 0)
+        set(gdata.hthreshln(1), 'YData',[y y]);
+    end
+end
+
 
 %*************************************************************************
-function on_button_up_thresh_line(obj, event)
+function on_button_up_thresh_line(obj, event, s)
 
 gdata = guidata(obj);
 
 c = get(gdata.axes, 'CurrentPoint');
-y = abs(c(1,2));
-set(gdata.hthreshln(1), 'YData',[y y]);
-set(gdata.hthreshln(2), 'YData',[-y -y]);
+y = c(1,2);
+good = false;
+if ((s > 0) && (y > 0))
+    set(gdata.hthreshln(2), 'YData',[y y]);
+    gdata.thresh(2,gdata.chan) = y;
+    good = true;
+elseif ((s < 0) && (y < 0))
+    set(gdata.hthreshln(1), 'YData',[y y]);
+    gdata.thresh(1,gdata.chan) = y;
+    good = true;
+end
 
-gdata.thresh(gdata.chan) = y;
-
-set(gdata.spikeThreshEdit, 'String', num2str(y,3));
-
-gdata = update_spikes(gdata, false);
-gdata = show_plot(gdata, {'spikes','bursts'});
+if (good)
+    if (s < 0)
+        set(gdata.spikeThreshLoEdit, 'String', num2str(y,3));
+    else
+        set(gdata.spikeThreshHiEdit, 'String', num2str(y,3));
+    end
+    
+    gdata = update_spikes(gdata, false);
+    gdata = show_plot(gdata, {'spikes','bursts'});
+end
 
 set(gdata.figure, 'WindowButtonMotionFcn',[], ...
     'WindowButtonUpFcn',[]);
@@ -294,7 +328,8 @@ else
     gdata = show_plot(gdata,'all');
 end
 set(gdata.channelEdit, 'String', num2str(gdata.chan));
-set(gdata.spikeThreshEdit, 'String', num2str(gdata.thresh(gdata.chan),3));
+set(gdata.spikeThreshLoEdit, 'String', num2str(gdata.thresh(1,gdata.chan),3));
+set(gdata.spikeThreshHiEdit, 'String', num2str(gdata.thresh(2,gdata.chan),3));
 set(gdata.interburstDurEdit, 'String', num2str(gdata.interburst(gdata.chan),3));
 set(gdata.minSpikesEdit, 'String', num2str(gdata.minspikes(gdata.chan),3));
 
@@ -311,16 +346,30 @@ guidata(obj,gdata);
 on_set_chan(obj,event,[],c);
 
 %*************************************************************************
-function on_edit_spikeThresh(obj,event)
+function on_edit_spikeThresh(obj,event,sgn)
 
 gdata = guidata(obj);
 s = get(obj,'String');
 c = str2double(s);
 
-gdata.thresh(gdata.chan) = c;
-gdata = update_spikes(gdata, false);
-gdata = show_plot(gdata, {'spikes','bursts'});
-
+good = false;
+if (sgn < 0) && (c < 0)
+    gdata.thresh(1,gdata.chan) = c;
+    good = true;
+elseif (sgn > 0) && (c > 0)
+    gdata.thresh(2,gdata.chan) = c;
+    good = true;
+end
+if (good)
+    gdata = update_spikes(gdata, false);
+    gdata = show_plot(gdata, {'spikes','bursts'});
+else
+    if (sgn < 0)
+        set(obj,'String',num2str(gdata.thresh(1,gdata.chan)));
+    else
+        set(obj,'String',num2str(gdata.thresh(2,gdata.chan)));
+    end        
+end
 guidata(obj,gdata);
 
 
@@ -381,7 +430,8 @@ set(data.doneButton,'Callback',@on_click_Done);
 set(data.nextButton, 'Callback',{@on_set_chan,1,[]});
 set(data.prevButton, 'Callback',{@on_set_chan,-1,[]});
 set(data.channelEdit, 'Callback',@on_edit_channel);
-set(data.spikeThreshEdit, 'Callback',@on_edit_spikeThresh);
+set(data.spikeThreshLoEdit, 'Callback',{@on_edit_spikeThresh,-1});
+set(data.spikeThreshHiEdit, 'Callback',{@on_edit_spikeThresh,1});
 set(data.interburstDurEdit, 'Callback',@on_edit_interburst);
 set(data.minSpikesEdit, 'Callback',@on_edit_minSpikes);
 set(data.burstRateCheck, 'Callback',@on_click_burstrate);
