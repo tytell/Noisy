@@ -84,8 +84,12 @@ for i = 1:nstim
             prepost2(boff1 < t0(i)-data.Duration(i)/2) = -1; 
             prepost2(bon1 > t0(i)+data.Duration(i)/2) = 1;
             k = first(prepost2 == 1);
-            prepost2(k+1) = 2;
-            prepost2(k+2:end) = 3;
+            if (k+1 <= length(prepost2))
+                prepost2(k+1) = 2;
+            end
+            if (k+2 <= length(prepost2))
+                prepost2(k+2:end) = 3;
+            end
             
             prepost1 = catuneven(2,prepost1,prepost2);
             
