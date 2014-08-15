@@ -4,14 +4,37 @@ opt.checksweep = true;
 
 opt = parsevarargin(opt,varargin, 4);
 
-[startdatevec,err] = hdf5err(@h5readatt,filename,'/','StartDateVector');
-[sampfreq,err] = hdf5err(@h5readatt,filename,'/Input','SampFreqHz');
+if verLessThan('matlab','7.11.0')
+    reader = @hdf5read;
+    attreader = @hdf5read;
+    
+    fileinfo = hdf5info(filename);
+    stiminfo = fileinfo.GroupHierarchy.Groups(2);
+    for i = 1:length(stiminfo.Attributes)
+        stiminfo.Attributes(i).Name = stiminfo.Attributes(i).Name(9:end);
+    end
+else
+    reader = @h5read;
+    attreader = @h5readatt;
+    
+    stiminfo = h5info(filename, '/Output');
+end
+
+[startdatevec,err] = hdf5err(attreader,filename,'/','StartDateVector');
+[sampfreq,err] = hdf5err(attreader,filename,'/Input','SampFreqHz');
 sampfreq = double(sampfreq);
-[motorfreq,err] = hdf5err(@h5readatt,filename,'/Output','MotorOutputFreqHz');
+[motorfreq,err] = hdf5err(attreader,filename,'/Output','MotorOutputFreqHz');
 motorfreq = double(motorfreq);
 
-sig = h5read(filename,'/Input/Voltage');
-ang = h5read(filename,'/Output/Motor');
+[stimtype,err] = hdf5err(attreader,filename,'/Output','StimulusType');
+if isa(stimtype,'hdf5.h5string')
+    stimtype = stimtype.Data;
+else
+    stimtype = stimtype{1};
+end
+
+[sig,err] = hdf5err(reader,filename,'/Input/Voltage');
+[ang,err] = hdf5err(reader,filename,'/Output/Motor');
 
 t = (0:size(sig,1)-1)' / sampfreq;
 dt = 1/sampfreq;
@@ -23,26 +46,24 @@ data.sig = sig;
 data.t = t;
 data.ang = ang;
 
-[stimtype,err] = hdf5err(@h5readatt,filename,'/Output','StimulusType');
-stimtype = stimtype{1};
-
-stiminfo = h5info(filename, '/Output');
-
 if ismember('SinePhase',{stiminfo.Datasets.Name})
-    phase = h5read(filename,'/Output/SinePhase');
+    phase = hdf5err(reader,filename,'/Output/SinePhase');
     phase = unmod(phase,1);
     
     phase = interp1(tang,phase, t);
     
     cycle = floor(phase);
     phase = mod(phase,1);
+elseif ismember('RampPhase',{stiminfo.Datasets.Name})
+    rampphase = hdf5err(reader,filename,'/Output/RampPhase');
+    rampphase = interp1(tang,rampphase, t);
 else
     phase = [];
     cycle = [];
 end
 
 if ismember('StimPhase',{stiminfo.Datasets.Name})
-    stimphase = h5read(filename,'/Output/StimPhase');
+    stimphase = hdf5err(reader,filename,'/Output/StimPhase');
     iswrap = diff(stimphase) < 0;
     wrapval = mode(ceil(stimphase(iswrap)));
     
@@ -84,8 +105,6 @@ switch stimtype
         data.stimfreq = data.SinFreqStartHz;
         data.amp = data.SinAmpStartDeg;
         data.noise = data.NoiseAmpStartDeg;
-        data.stimphase = data.phase;
-        data.stimcycle = ones(size(data.phase));
         
     case 'FrequencySweep'
         if isempty(phase)
@@ -177,7 +196,6 @@ switch stimtype
         data.stimfreq = data.SinFreqStartHz;
         data.amp = data.SinAmpStartDeg;
         data.noise = data.NoiseAmpStartDeg;
-
     case 'Shifts'
         if isempty(phase)
             stimper = 1/data.SinFreqStartHz;
@@ -220,6 +238,10 @@ switch stimtype
         data.stimfreq = data.SinFreqStartHz;
         data.amp = data.SinAmpStartDeg;
         data.noise = data.NoiseAmpStartDeg;
+        
+    case 'Ramps'
+        data.rampphase = rampphase;
+        
     otherwise
         error('Unrecognized treatment type: %s',stimtype);
 end
