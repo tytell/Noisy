@@ -64,10 +64,17 @@ cycle = data.burstcyclestim;
 phase = data.burstphasestim;
 prepost = data.burstprepoststim;
 
-dphase = angdiff(2*pi*phase,2*pi*repmat(mnphase,[size(phase,1) 1 size(phase,3)])) / (2*pi);
+mn1 = angmean(2*pi*phase)/(2*pi);
+ph1 = mod(phase - repmat(mn1,[size(phase,1) 1 1]) + 0.5, 1);
+mn2 = mod(repmat(mnphase,[size(phase,1) 1 size(phase,3)]) - repmat(mn1,[size(phase,1) 1 1]) + 0.5, 1);
+dphase = ph1 - mn2;
+%dphase = angdiff(2*pi*phase,2*pi*repmat(mnphase,[size(phase,1) 1 size(phase,3)])) / (2*pi);
 dphasez = dphase ./ repmat(stdphase,[size(cycle,1) 1 size(cycle,3)]);
 
-donphase = angdiff(2*pi*onphase,2*pi*repmat(mnonphase,[size(phase,1) 1 size(phase,3)])) / (2*pi);
+mn1 = angmean(2*pi*onphase)/(2*pi);
+ph1 = mod(onphase - repmat(mn1,[size(phase,1) 1 1]) + 0.5, 1);
+mn2 = mod(repmat(mnonphase,[size(phase,1) 1 size(phase,3)]) - repmat(mn1,[size(phase,1) 1 1]) + 0.5, 1);
+donphase = ph1 - mn2;
 donphasez = donphase ./ repmat(stdonphase,[size(cycle,1) 1 size(cycle,3)]);
 
 dur = data.burstdurstim / stimper;
