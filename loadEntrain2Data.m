@@ -47,7 +47,7 @@ data.t = t;
 data.ang = ang;
 
 if ismember('SinePhase',{stiminfo.Datasets.Name})
-    phase = hdf5err(reader,filename,'/Output/SinePhase');
+    [phase,err] = hdf5err(reader,filename,'/Output/SinePhase');
     phase = unmod(phase,1);
     
     phase = interp1(tang,phase, t);
@@ -55,15 +55,15 @@ if ismember('SinePhase',{stiminfo.Datasets.Name})
     cycle = floor(phase);
     phase = mod(phase,1);
 elseif ismember('RampPhase',{stiminfo.Datasets.Name})
-    rampphase = hdf5err(reader,filename,'/Output/RampPhase');
-    rampphase = interp1(tang,rampphase, t);
+    [rampphase,err] = hdf5err(reader,filename,'/Output/RampPhase');
+    rampphase = interp1(tang,rampphase, t, 'nearest');
 else
     phase = [];
     cycle = [];
 end
 
 if ismember('StimPhase',{stiminfo.Datasets.Name})
-    stimphase = hdf5err(reader,filename,'/Output/StimPhase');
+    [stimphase,err] = hdf5err(reader,filename,'/Output/StimPhase');
     iswrap = diff(stimphase) < 0;
     wrapval = mode(ceil(stimphase(iswrap)));
     
