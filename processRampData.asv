@@ -66,5 +66,5 @@ for i = 1:length(data.Time) %Steps through each start stimulus start t
 
 end
 
-putvar spikerate rampvel ramppos spikenum;
+putvar spikerate rampvel ramppos;
 
