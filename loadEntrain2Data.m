@@ -34,7 +34,13 @@ else
 end
 
 [sig,err] = hdf5err(reader,filename,'/Input/Voltage');
+[channelnames,err] = hdf5err(attreader,filename,'/Input/Voltage','Names');
+
 [ang,err] = hdf5err(reader,filename,'/Output/Motor');
+[stimpos,err] = hdf5err(attreader,filename,'/Output','StimulusLocation');
+if ~isempty(err)
+    stimpos = input('Stimulus location? ');
+end
 
 t = (0:size(sig,1)-1)' / sampfreq;
 dt = 1/sampfreq;
@@ -45,6 +51,8 @@ ang = interp1(tang,ang, t);
 data.sig = sig;
 data.t = t;
 data.ang = ang;
+data.channelnames = channelnames;
+data.stimuluspos = stimpos;
 
 if ismember('SinePhase',{stiminfo.Datasets.Name})
     [phase,err] = hdf5err(reader,filename,'/Output/SinePhase');
