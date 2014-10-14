@@ -12,6 +12,7 @@ opt.raw = true;
 opt.bursts = true;
 opt.meanburstphase = true;
 opt.spacing = 0;
+opt.usenewphase = true;
 
 if (isnumeric(varargin{1}))
     ind = varargin{1};
@@ -38,7 +39,12 @@ if (isempty(ind))
                 opt.direction = [opt.direction opt.direction];
             end
             
-            ind = find((data.Phase >= opt.phase(1)) & (data.Phase <= opt.phase(2)) & ...
+            if opt.usenewphase
+                isphase = anginrange(2*pi*data.burstphaseatstim, 2*pi*opt.phase(1), 2*pi*opt.phase(2));
+            else
+                isphase = (data.Phase >= opt.phase(1)) & (data.Phase <= opt.phase(2));
+            end
+            ind = find(isphase & ...
                 (data.Direction >= opt.direction(1)) & (data.Direction <= opt.direction(2)));
             
         case 'Shifts'
@@ -73,7 +79,7 @@ if (isempty(ind))
 end    
 
 if isempty(opt.channel)
-    opt.channel = 1:size(data.sig,2);
+    opt.channel = find(data.goodchan);
 end
 
 nchan = length(opt.channel);
@@ -82,17 +88,31 @@ nrep = length(ind);
 h = -1*ones(nchan,1);
 
 if opt.meanburstphase
-    %most common maximum cycle number
-    ncycle = mode(flatten(max(data.burstcyclestim)));
-    
-    mnphase = zeros(1,nchan);
-    for c = 1:nchan
-        burstcycle1 = squeeze(data.burstcyclestim(:,c,:));
-        burstphase1 = squeeze(data.burstphasestim(:,c,:));
-        goodcyc = (burstcycle1 < -1) | ...
-            ((burstcycle1 > 4) & (burstcycle1 <= ncycle-1));
-        mnphase1 = angmean(2*pi*burstphase1(goodcyc));
-        mnphase(c) = mod(mnphase1/(2*pi),1);
+    if (data.amp > 0)
+        %most common maximum cycle number
+        ncycle = mode(flatten(max(data.burstcyclestim)));
+
+        mnphase = zeros(1,nchan);
+        for i = 1:nchan
+            c = opt.channel(i);
+            burstcycle1 = squeeze(data.burstcyclestim(:,c,:));
+            burstphase1 = squeeze(data.burstphasestim(:,c,:));
+            goodcyc = (burstcycle1 < -1) | ...
+                ((burstcycle1 > 4) & (burstcycle1 <= ncycle-1));
+            mnphase1 = angmean(2*pi*burstphase1(goodcyc));
+            mnphase(c) = mod(mnphase1/(2*pi),1);
+        end
+        mnphase = mnphase - angmean(2*pi*burstphaseatstim1)/(2*pi);
+    else
+        burstper1 = data.burstperstim(:,opt.channel,ind);
+        bursttype1 = data.burstprepoststim(:,opt.channel,ind);
+        burstper = nanmedian(burstper1(bursttype1 == -1));
+        
+        burstphase1 = data.bursttstim(:,opt.channel,ind) / burstper;
+        burstphase1(bursttype1 ~= -1) = NaN;
+        
+        mnphase = angmean(2*pi*flatten(burstphase1,[1 3]));
+        mnphase = mod(mnphase/(2*pi),1);
     end
 end
 
@@ -105,18 +125,19 @@ end
 clf;
 for i = 1:nchan
     c = opt.channel(i);
-
+    
     h(i) = subplot(nchan+1,1, i);
     sig1 = squeeze(data.sigstim(:,c,ind));
     mid1 = diff(prctile(sig1(:),[5 95]));
     if opt.raw
         good = any(isfinite(sig1),2);
-        plot(t1(good,:), sig1(good,:) + ...
+        plot(repmat(t1(good,:),[1 nrep]), sig1(good,:) + ...
             repmat(0:length(ind)-1,[sum(good) 1])*mid1*opt.spacing);
     end
     
     d = max(abs(sig1(:)));
     spiket1 = squeeze(data.spiketstim(:,c,ind));
+    %spiket1 = spiket1 - repmat(toff,[size(spiket1,1) 1]);
     spikey1 = mid1*opt.spacing*(length(ind)-1) + d + (0:nrep-1)*d/5;
 
     if opt.raster
@@ -124,9 +145,12 @@ for i = 1:nchan
     end
     
     if opt.bursts
-        burst1 = cat(2,data.burstonstim(:,c,ind),...
-            data.burstonstim(:,c,ind)+data.burstdurstim(:,c,ind),...
-            NaN(size(data.bursttstim(:,c,ind))));
+        burston1 = data.burstonstim(:,c,ind);
+        %burston1 = burston1 - repmat(shiftdim(toff,-1),[size(burston1,1) 1 1]);
+        burstoff1 = data.burstonstim(:,c,ind)+data.burstdurstim(:,c,ind);
+        %burstoff1 = burstoff1 - repmat(shiftdim(toff,-1),[size(burstoff1,1) 1 1]);
+        
+        burst1 = cat(2,burston1,burstoff1, NaN(size(data.bursttstim(:,c,ind))));
         burst1 = permute(burst1,[2 1 3]);
         burst1 = flatten(burst1,1:2);
         
@@ -135,14 +159,19 @@ for i = 1:nchan
         addplot(burst1,bursty1,'k-', 'LineWidth',1);
         
         burstctr1 = squeeze(data.bursttstim(:,c,ind));
+        %burstctr1 = burstctr1 - repmat(toff,[size(burstctr1,1) 1]);
         bursty1 = repmat(spikey1,[size(burstctr1,1) 1]);
         addplot(burstctr1,bursty1, 'ko', 'MarkerFaceColor','w');
         if opt.meanburstphase
             axis tight;
             xl = xlim;
-            stimper = 1/data.SinFreqStartHz;
+            if data.amp > 0
+                stimper = 1/data.SinFreqStartHz;
+            else
+                stimper = burstper;
+            end
             xl = round(xl/stimper);
-            
+
             mnphase1 = (xl(1)+mnphase(i)):1:xl(2);
             if strcmp(data.StimulusType,'Shifts')
                 isbefore = mnphase1 < 0;

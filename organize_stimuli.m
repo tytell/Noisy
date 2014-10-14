@@ -1,10 +1,25 @@
 function data = organize_stimuli(data, varargin)
 
 opt.prestimcycles = 5;
+opt.basephaselag = 0.01;
 opt = parsevarargin(opt, varargin, 2);
 
 nchan = size(data.sig,2);
 stimper = 1/data.SinFreqStartHz;
+goodchan = data.goodchan > 0;
+
+side = regexp(data.channelnames,'[LR]','once','match');
+isleft = cellfun(@(x) (~isempty(x)) && (x == 'L'), side);
+
+seg = regexp(data.channelnames,'\d+','once','match');
+seg = cellfun(@str2double,seg);
+
+relseg = data.stimuluspos;
+
+burstrelphase = (seg - relseg)*opt.basephaselag;
+burstrelphase(~isleft) = burstrelphase(~isleft) + 0.5;
+burstrelphase = burstrelphase(:)';
+data.burstrelphase = burstrelphase;
 
 spikestimind = NaN(size(data.spiket));
 burststimind = NaN(size(data.burstt));
@@ -31,7 +46,7 @@ switch data.StimulusType
         tstart = round(tstart/stimper) * stimper + data.BeforeDurSec;
         tend = tstart + stimdur;
 
-        t0 = tstart + 1/data.SinFreqStartHz;    % 1 period later
+        t0 = tstart + data.Phase/data.SinFreqStartHz;
         tstart = tstart - opt.prestimcycles/data.SinFreqStartHz;
         issamedur = true;
 
@@ -45,7 +60,11 @@ switch data.StimulusType
         issamedur = false;
 end
 
-data.tstim = [];
+dt = data.t(2) - data.t(1);
+t2 = (0:dt:stimdur)' - opt.prestimcycles/data.SinFreqStartHz;
+t2 = t2 - first(t2,t2 >= 0);
+
+data.tstim = t2;
 data.sigstim = [];
 data.angstim = [];
 data.spiketstim = [];
@@ -56,13 +75,17 @@ data.burstdurstim = [];
 data.burstphasestim = [];
 data.burstindstim = [];
 data.burstprepoststim = [];
-        
+data.burstperstim = [];
+data.burstphaseatstim = NaN(nstim,1);
+
 for i = 1:nstim
     isstim = (data.t > tstart(i)) & (data.t <= tend(i));
     
     sig1 = data.sig(isstim,:);
     ang1 = data.ang(isstim);
     t1 = data.t(isstim) - t0(i);
+
+    ang2 = interp1(t1,ang1, t2);
     
     spiket1 = [];
     burstt1 = [];
@@ -71,7 +94,10 @@ for i = 1:nstim
     burstphase1 = [];
     burstind1 = [];
     prepost1 = [];
+    sig2 = zeros(size(t2,1),nchan);
     for j = 1:nchan
+        sig2(:,j) = interp1(t1,sig1(:,j), t2);
+        
         isstim1 = (data.spiket(:,j) >= tstart(i)) & (data.spiket(:,j) <= tend(i));
         spiket1 = catuneven(2,spiket1,data.spiket(isstim1,j));
         
@@ -96,7 +122,11 @@ for i = 1:nstim
             burstt1 = catuneven(2,burstt1,data.burstt(isstim1,j));
             burston1 = catuneven(2,burston1,bon1);
             burstdur1 = catuneven(2,burstdur1,boff1 - bon1);
-            burstphase1 = catuneven(2,burstphase1,data.burstphase(isstim1,j));
+            if (isfield(data,'burstphase'))
+                burstphase1 = catuneven(2,burstphase1,data.burstphase(isstim1,j));
+            else
+                burstphase1 = catuneven(2,burstphase1,NaN(sum(isstim1),1));
+            end
             burstind1 = catuneven(2,burstind1,find(isstim1));
         else
             burstt1 = catuneven(2,burstt1,NaN);
@@ -112,15 +142,28 @@ for i = 1:nstim
     burstt1 = burstt1 - t0(i);
     burston1 = burston1 - t0(i);
     
-    if issamedur
-        if (length(t1) > length(data.tstim))
-            data.tstim = t1;
-        end
+    burstper1 = NaN(size(burstt1));
+    burstper1(2:end,:) = diff(burstt1);
+    
+    lastper = burstper1;
+    lastper(prepost1 ~= -1) = NaN;
+    lastper = nanmedian(flatten(lastper(:,goodchan)));
+    
+    stimphase1 = (0 - last(burston1,prepost1 == -1)) / lastper;
+    stimphase1 = stimphase1 + burstrelphase;
+    stimphase1 = angmean(2*pi*stimphase1(goodchan)) / (2*pi);
+    
+    if all(isnan(burstphase1(:)))
+        burstphase1 = burston1 / lastper + stimphase1;
     else
-        data.tstim = catuneven(3,data.tstim,t1);
+        burstphase1 = burston1 / stimper + stimphase1;
     end
-    data.sigstim = catuneven(3,data.sigstim,sig1);
-    data.angstim = catuneven(3,data.angstim,ang1);
+    
+    if ~issamedur
+        data.tstim = catuneven(3,data.tstim,t2);
+    end
+    data.sigstim = catuneven(3,data.sigstim,sig2);
+    data.angstim = catuneven(3,data.angstim,ang2);
     data.spiketstim = catuneven(3,data.spiketstim,spiket1);
     data.bursttstim = catuneven(3,data.bursttstim,burstt1);
     data.burstcyclestim = catuneven(3,data.burstcyclestim, floor(burstt1/stimper));
@@ -129,6 +172,8 @@ for i = 1:nstim
     data.burstphasestim = catuneven(3,data.burstphasestim,burstphase1);
     data.burstprepoststim = catuneven(3,data.burstprepoststim,prepost1);
     data.burstindstim = catuneven(3,data.burstindstim,burstind1);
+    data.burstperstim = catuneven(3,data.burstperstim,burstper1);
+    data.burstphaseatstim(i) = stimphase1;
 end
 
 

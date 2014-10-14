@@ -13,11 +13,17 @@ end
 
 function save_pulse_data(data, outfile)
 
-stimper = 1 / data.SinFreqStartHz;
+goodchan = data.goodchan > 0;
+
+if (data.amp > 0)
+    stimper = 1 / data.SinFreqStartHz;
+else
+    prepost = data.burstprepoststim(:,goodchan,:);
+    burstper = nanmedian(data.burstperstim(prepost == -1));
+    stimper = burstper;
+end
 
 ncycle = mode(flatten(max(data.burstcyclestim)));
-
-onphase = mod(data.burstonstim/stimper,1);
 
 burstfreq = NaN(size(data.bursttstim));
 burstfreq(1:end-1,:,:) = 1 ./ diff(data.bursttstim,[],1);
@@ -29,59 +35,91 @@ burstspikerate = NaN(size(burstfreq));
 good = isfinite(data.burstindstim);
 burstspikerate(good) = burstspikerate0(data.burstindstim(good));
 
-nchan = size(data.sig,2);
-mnphase = zeros(1,nchan);
-stdphase = zeros(1,nchan);
-mnonphase = zeros(1,nchan);
-stdonphase = zeros(1,nchan);
-mndur = zeros(1,nchan);
-stddur = zeros(1,nchan);
-mnspikerate = zeros(1,nchan);
-stdspikerate = zeros(1,nchan);
-for c = 1:nchan
-    prepost1 = squeeze(data.burstprepoststim(:,c,:));
-    burstphase1 = squeeze(data.burstphasestim(:,c,:));
-    goodcyc = (prepost1 == -1) | (prepost1 == 3);
-    [mnphase1,~,stdphase1] = angmean(2*pi*burstphase1(goodcyc));
-    mnphase(c) = mod(mnphase1/(2*pi),1);
-    stdphase(c) = stdphase1/(2*pi);
+nchan = sum(goodchan);
+nstim = size(data.bursttstim,3);
+ncyc = size(data.bursttstim,1);
+prepost = data.burstprepoststim(:,goodchan,:);
+goodcyc = prepost == -1;
+
+if data.amp > 0
+    onphase = data.burstonstim(:,goodchan,:)/stimper - ...
+        repmat(reshape(data.burstphaseatstim,[1 1 nstim]),...
+        [size(data.burstonstim,1) nchan 1]);
+    phase = data.burstphasestim(:,goodchan,:);
+else
+    phase = data.burstonstim(:,goodchan,:)/stimper;
+    onphase = data.bursttstim(:,goodchan,:)/stimper;
+end
+dur = data.burstdurstim(:,goodchan,:);
+spikerate = burstspikerate(:,goodchan,:);
+
+onphase(~goodcyc) = NaN;
+phase(~goodcyc) = NaN;
+dur(~goodcyc) = NaN;
+spikerate(~goodcyc) = NaN;
+if data.amp > 0    
+    [mnonphase,~,stdonphase] = angmean(2*pi*flatten(onphase,[1 3]));
+    [mnphase,~,stdphase] = angmean(2*pi*flatten(phase,[1 3]));
+else
+    mnonphase = angmean(2*pi*onphase);
+    [~,~,stdonphase] = angmean(flatten(2*pi*onphase - repmat(mnonphase,[size(onphase,1) 1 1]),[1 3]));
+    mnphase = angmean(2*pi*phase);
+    [~,~,stdphase] = angmean(flatten(2*pi*phase - repmat(mnphase,[size(onphase,1) 1 1]),[1 3]));
+end
+mnphase = mod(mnphase/(2*pi),1);
+mnonphase = mod(mnonphase/(2*pi),1);
+stdphase = stdphase/(2*pi);
+stdonphase = stdonphase/(2*pi);
+
+mndur = nanmean(flatten(dur,[1 3]));
+stddur = nanstd(flatten(dur,[1 3]));
+mnspikerate = nanmean(flatten(spikerate,[1 3]));
+stdspikerate = nanstd(flatten(spikerate,[1 3]));
+
+cycle = data.burstcyclestim(:,goodchan,:);
+prepost = data.burstprepoststim(:,goodchan,:);
+
+if data.amp > 0
+    onphase = data.burstonstim(:,goodchan,:)/stimper - ...
+        repmat(reshape(data.burstphaseatstim,[1 1 nstim]),...
+        [size(data.burstonstim,1) nchan 1]);
+    phase = data.burstphasestim(:,goodchan,:);
     
-    onphase1 = onphase(:,c,:);
-    [mnonphase1,~,stdonphase1] = angmean(2*pi*onphase1(goodcyc));
-    mnonphase(c) = mod(mnonphase1/(2*pi),1);
-    stdonphase(c) = stdonphase1/(2*pi);
+    mn1 = angmean(2*pi*phase)/(2*pi);
+    ph1 = mod(phase - repmat(mn1,[size(phase,1) 1 1]) + 0.5, 1);
+    mn2 = mod(repmat(mnphase,[size(phase,1) 1 size(phase,3)]) - repmat(mn1,[size(phase,1) 1 1]) + 0.5, 1);
+    dphase = ph1 - mn2;
+    %dphase = angdiff(2*pi*phase,2*pi*repmat(mnphase,[size(phase,1) 1 size(phase,3)])) / (2*pi);
+    dphasez = dphase ./ repmat(stdphase,[size(cycle,1) 1 size(cycle,3)]);
     
-    dur1 = data.burstdurstim(:,c,:);
-    mndur(c) = nanmean(dur1(goodcyc));
-    stddur(c) = nanstd(dur1(goodcyc));
+    mn1 = angmean(2*pi*onphase)/(2*pi);
+    ph1 = mod(onphase - repmat(mn1,[size(phase,1) 1 1]) + 0.5, 1);
+    mn2 = mod(repmat(mnonphase,[size(phase,1) 1 size(phase,3)]) - repmat(mn1,[size(phase,1) 1 1]) + 0.5, 1);
+    donphase = ph1 - mn2;
+    donphasez = donphase ./ repmat(stdonphase,[size(cycle,1) 1 size(cycle,3)]);
+else
+    t1 = data.bursttstim(:,goodchan,:);
+    t0 = last(t1, prepost == -1);
+    cycle1 = round((t1 - repmat(t0,[ncyc 1 1])) / stimper);
     
-    spikerate1 = burstspikerate(:,c,:);
-    mnspikerate(c) = nanmean(spikerate1(goodcyc));
-    stdspikerate(c) = nanstd(spikerate1(goodcyc));
+    texp = cycle1 * stimper + repmat(t0,[ncyc 1 1]);
+    dphase = (t1 - texp) / stimper;
+    dphasez = dphase ./ repmat(stdphase,[size(cycle,1) 1 size(cycle,3)]);
+    
+    t1 = data.burstonstim(:,goodchan,:);
+    t0 = last(t1, prepost == -1);
+    cycle1 = round((t1 - repmat(t0,[ncyc 1 1])) / stimper);
+    
+    texp = cycle1 * stimper + repmat(t0,[ncyc 1 1]);
+    donphase = (t1 - texp) / stimper;
+    donphasez = donphase ./ repmat(stdonphase,[size(cycle,1) 1 size(cycle,3)]);
 end
 
-cycle = data.burstcyclestim;
-phase = data.burstphasestim;
-prepost = data.burstprepoststim;
-
-mn1 = angmean(2*pi*phase)/(2*pi);
-ph1 = mod(phase - repmat(mn1,[size(phase,1) 1 1]) + 0.5, 1);
-mn2 = mod(repmat(mnphase,[size(phase,1) 1 size(phase,3)]) - repmat(mn1,[size(phase,1) 1 1]) + 0.5, 1);
-dphase = ph1 - mn2;
-%dphase = angdiff(2*pi*phase,2*pi*repmat(mnphase,[size(phase,1) 1 size(phase,3)])) / (2*pi);
-dphasez = dphase ./ repmat(stdphase,[size(cycle,1) 1 size(cycle,3)]);
-
-mn1 = angmean(2*pi*onphase)/(2*pi);
-ph1 = mod(onphase - repmat(mn1,[size(phase,1) 1 1]) + 0.5, 1);
-mn2 = mod(repmat(mnonphase,[size(phase,1) 1 size(phase,3)]) - repmat(mn1,[size(phase,1) 1 1]) + 0.5, 1);
-donphase = ph1 - mn2;
-donphasez = donphase ./ repmat(stdonphase,[size(cycle,1) 1 size(cycle,3)]);
-
-dur = data.burstdurstim / stimper;
+dur = data.burstdurstim(:,goodchan,:) / stimper;
 ddur = dur - repmat(mndur/stimper,[size(cycle,1) 1 size(cycle,3)]);
 ddurz = ddur ./ repmat(stddur/stimper,[size(cycle,1) 1 size(cycle,3)]);
 
-dburstspikerate = burstspikerate - repmat(mnspikerate,[size(cycle,1) 1 size(cycle,3)]);
+dburstspikerate = burstspikerate(:,goodchan,:) - repmat(mnspikerate,[size(cycle,1) 1 size(cycle,3)]);
 dburstspikeratez = dburstspikerate ./ repmat(stdspikerate,[size(cycle,1) 1 size(cycle,3)]);
 
 prepost = permute(prepost,[1 3 2]);
@@ -147,14 +185,17 @@ stimdirec = repmat(data.Direction',[size(cycle2,1) 1]);
 stimamp = repmat(data.Amplitude',[size(cycle2,1) 1]);
 stimdur = repmat(data.Duration',[size(cycle2,1) 1]);
 stimnum = repmat(1:length(data.Phase),[size(cycle2,1) 1]);
+burstphaseatstim = repmat(data.burstphaseatstim',[size(cycle2,1) 1]);
 
-X = [stimnum(:) stimphase(:) stimdirec(:) stimamp(:) stimdur(:) cycle2(:) prepost2(:)];
-lab = {'StimNum','StimPhase','StimDirec','StimAmp','StimDur','CycleNum','CycleType'};
+X = [stimnum(:) stimphase(:) stimdirec(:) stimamp(:) stimdur(:) ...
+    cycle2(:) prepost2(:) burstphaseatstim(:)];
+lab = {'StimNum','StimPhase','StimDirec','StimAmp','StimDur','CycleNum',...
+    'CycleType','BurstStimPhase'};
 chanlab = {'Phase','Freq','DPhase','DPhaseZ','DOnPhase','DOnPhaseZ',...
     'Dur','DDur','DDurZ','SpikeRate','DSpikeRate','DSpikeRateZ'};
 
 
-tplt = '%d,%.3f,%d,%.1f,%.2f,%.1f,%d';
+tplt = '%d,%.3f,%d,%.1f,%.2f,%.1f,%d,%.3f';
 Ctplt = '%.3f,%.2f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.2f,%.3f,%.3f';
 
 C = reshape(C,[size(X,1) nchan size(C,4)]);
