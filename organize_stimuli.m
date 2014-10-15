@@ -7,6 +7,7 @@ opt = parsevarargin(opt, varargin, 2);
 nchan = size(data.sig,2);
 stimper = 1/data.SinFreqStartHz;
 goodchan = data.goodchan > 0;
+goodind = find(goodchan);
 
 side = regexp(data.channelnames,'[LR]','once','match');
 isleft = cellfun(@(x) (~isempty(x)) && (x == 'L'), side);
@@ -23,12 +24,12 @@ data.burstrelphase = burstrelphase;
 
 spikestimind = NaN(size(data.spiket));
 burststimind = NaN(size(data.burstt));
-for i = 1:nchan
-    good = isfinite(data.spiket(:,i));
-    spikestimind(good,i) = interp1(data.t,data.stimcycle, data.spiket(good,i));
+for c = 1:nchan
+    good = isfinite(data.spiket(:,c));
+    spikestimind(good,c) = interp1(data.t,data.stimcycle, data.spiket(good,c));
     
-    good = isfinite(data.burstt(:,i));
-    burststimind(good,i) = interp1(data.t,data.stimcycle, data.burstt(good,i));
+    good = isfinite(data.burstt(:,c));
+    burststimind(good,c) = interp1(data.t,data.stimcycle, data.burstt(good,c));
 end
 
 burston = catuneven(1,data.burst.on)';
@@ -129,6 +130,7 @@ for i = 1:nstim
             end
             burstind1 = catuneven(2,burstind1,find(isstim1));
         else
+            spiket1 = catuneven(2,spiket1,NaN);
             burstt1 = catuneven(2,burstt1,NaN);
             burston1 = catuneven(2,burston1,NaN);
             burstdur1 = catuneven(2,burstdur1,NaN);

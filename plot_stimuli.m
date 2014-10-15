@@ -75,6 +75,11 @@ if (isempty(ind))
         fprintf('Found stimuli: ');
         fprintf('%d ',ind);
         fprintf('\n');
+        
+        [mnburstphase,~,stdburstphase] = angmean(2*pi*data.burstphaseatstim(ind));
+        mnburstphase = mod(mnburstphase/(2*pi),1);
+        stdburstphase = stdburstphase/(2*pi);        
+        fprintf('Mean burst phase: %f +- %f\n', mnburstphase,stdburstphase);
     end
 end    
 
@@ -87,33 +92,21 @@ nrep = length(ind);
 
 h = -1*ones(nchan,1);
 
+bursttype1 = data.burstprepoststim(:,opt.channel,ind);
+burstper1 = data.burstperstim(:,opt.channel,ind);
+burstper = nanmedian(burstper1(bursttype1 == -1));
 if opt.meanburstphase
     if (data.amp > 0)
-        %most common maximum cycle number
-        ncycle = mode(flatten(max(data.burstcyclestim)));
-
-        mnphase = zeros(1,nchan);
-        for i = 1:nchan
-            c = opt.channel(i);
-            burstcycle1 = squeeze(data.burstcyclestim(:,c,:));
-            burstphase1 = squeeze(data.burstphasestim(:,c,:));
-            goodcyc = (burstcycle1 < -1) | ...
-                ((burstcycle1 > 4) & (burstcycle1 <= ncycle-1));
-            mnphase1 = angmean(2*pi*burstphase1(goodcyc));
-            mnphase(c) = mod(mnphase1/(2*pi),1);
-        end
-        mnphase = mnphase - angmean(2*pi*burstphaseatstim1)/(2*pi);
+        per = 1/data.SinFreqStartHz;
     else
-        burstper1 = data.burstperstim(:,opt.channel,ind);
-        bursttype1 = data.burstprepoststim(:,opt.channel,ind);
-        burstper = nanmedian(burstper1(bursttype1 == -1));
-        
-        burstphase1 = data.bursttstim(:,opt.channel,ind) / burstper;
-        burstphase1(bursttype1 ~= -1) = NaN;
-        
-        mnphase = angmean(2*pi*flatten(burstphase1,[1 3]));
-        mnphase = mod(mnphase/(2*pi),1);
+        per = burstper;
     end
+    
+    burstphase1 = data.bursttstim(:,opt.channel,ind) / per;
+    burstphase1(bursttype1 ~= -1) = NaN;
+
+    mnphase = angmean(2*pi*flatten(burstphase1,[1 3]));
+    mnphase = mod(mnphase/(2*pi),1);
 end
 
 if size(data.tstim,3) > 1
