@@ -32,8 +32,8 @@ for c = 1:nchan
     burststimind(good,c) = interp1(data.t,data.stimcycle, data.burstt(good,c));
 end
 
-burston = catuneven(1,data.burst.on)';
-burstoff = catuneven(1,data.burst.off)';
+burston = catuneven(1,data.burst.on,'keepempty')';
+burstoff = catuneven(1,data.burst.off,'keepempty')';
 
 stimdur = mode(round(diff(data.Time)/stimper)) * stimper;
 
@@ -100,7 +100,11 @@ for i = 1:nstim
         sig2(:,j) = interp1(t1,sig1(:,j), t2);
         
         isstim1 = (data.spiket(:,j) >= tstart(i)) & (data.spiket(:,j) <= tend(i));
-        spiket1 = catuneven(2,spiket1,data.spiket(isstim1,j));
+        if any(isstim1)
+            spiket1 = catuneven(2,spiket1,data.spiket(isstim1,j));
+        else
+            spiket1 = catuneven(2,spiket1,NaN);
+        end
         
         isstim1 = (data.burstt(:,j) >= tstart(i)) & (data.burstt(:,j) <= tend(i));
         if any(isstim1)
@@ -130,7 +134,6 @@ for i = 1:nstim
             end
             burstind1 = catuneven(2,burstind1,find(isstim1));
         else
-            spiket1 = catuneven(2,spiket1,NaN);
             burstt1 = catuneven(2,burstt1,NaN);
             burston1 = catuneven(2,burston1,NaN);
             burstdur1 = catuneven(2,burstdur1,NaN);
