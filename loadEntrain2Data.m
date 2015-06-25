@@ -1,6 +1,7 @@
 function data = loadEntrain2Data(filename, varargin)
 
 opt.checksweep = true;
+opt.stimuluslocation = [];
 
 opt = parsevarargin(opt,varargin, 4);
 
@@ -37,11 +38,14 @@ end
 [channelnames,err] = hdf5err(attreader,filename,'/Input/Voltage','Names');
 
 [ang,err] = hdf5err(reader,filename,'/Output/Motor');
-[stimpos,err] = hdf5err(attreader,filename,'/Output','StimulusLocation');
-if ~isempty(err)
-    stimpos = input('Stimulus location? ');
+if ~isempty(opt.stimuluslocation)
+    stimpos = opt.stimuluslocation;
+else
+    [stimpos,err] = hdf5err(attreader,filename,'/Output','StimulusLocation');
+    if ~isempty(err)
+        stimpos = input('Stimulus location? ');
+    end
 end
-
 t = (0:size(sig,1)-1)' / sampfreq;
 dt = 1/sampfreq;
 

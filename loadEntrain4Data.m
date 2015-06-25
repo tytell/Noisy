@@ -1,6 +1,7 @@
 function data = loadEntrain4Data(filename, varargin)
 
 opt.checksweep = true;
+opt.stimuluslocation = [];
 opt = parsevarargin(opt,varargin, 4);
 
 if ~exist('TDMS_getStruct','file')
@@ -31,7 +32,9 @@ sig = sig';
 
 ang = TDMS_readChannelOrGroup(filename,'Output','Motor');
 ang = ang';
-if isfield(fileinfo.Output.Motor.Props,'StimulusLocation')
+if ~isempty(opt.stimuluslocation)
+    stimpos = opt.stimuluslocation;
+elseif isfield(fileinfo.Output.Motor.Props,'StimulusLocation')
     stimpos = fileinfo.Output.Motor.Props.StimulusLocation;
 else
     stimpos = input('Stimulus location? ');
