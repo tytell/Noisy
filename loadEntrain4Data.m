@@ -14,11 +14,6 @@ startdatevec = TDMS_readChannelOrGroup(filename,'Untitled','StartDateVector');
 sampfreq = fileinfo.Input.Props.SampFreqHz;
 sampfreq = double(sampfreq);
 motorfreq = fileinfo.Output.Props.MotorOutputFreqHz;
-if motorfreq > 100
-    motorsavefreq = 100;
-else
-    motorsavefreq = motorfreq;
-end
 
 if ~isfield(fileinfo.Output.Motor.Props,'StimulusType')
     error('Stimulus type info not in file... Weird.');
@@ -42,6 +37,13 @@ end
 
 t = (0:size(sig,1)-1)' / sampfreq;
 dt = 1/sampfreq;
+
+if motorfreq > 100
+    motorsavefreq = diground(length(ang)/t(end),10);
+    fprintf('Assuming motor output data was saved at %dHz\n', motorsavefreq);
+else
+    motorsavefreq = motorfreq;
+end
 
 tang = (0:size(ang,1)-1)' / motorsavefreq;
 ang = interp1(tang,ang, t);
@@ -90,7 +92,7 @@ end
 
 stimattrs = fileinfo.Output.Motor.Props;
 [stimattrdata,stimattrnames] = TDMS_readChannelOrGroup(filename,'Output');
-isattr = ~ismember(stimattrnames,{'Motor','SinePhase','StimPhase'});
+isattr = ~ismember(stimattrnames,{'Motor','SinePhase','StimPhase','RampPhase'});
 if any(isattr)
     attrlen = cellfun(@length,stimattrdata(isattr));
     if (any(attrlen ~= attrlen(1)))
