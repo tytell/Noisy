@@ -7,9 +7,12 @@ for i = 1:length(pulset)
         indbefore = last(burstoff(:,c) < pulset(i)-pulsedur/2);
         indafter = first(burston(:,c) > pulset(i)+pulsedur/2);
         
-        burstnum(indbefore+1:indafter-1,c) = 0;
-        burstnum(indafter+(0:9),c) = 1:10;
+        if ~isempty(indbefore) && ~isempty(indafter)
+            burstnum((-2:0)+indbefore,c) = -3:-1;
+            burstnum(indbefore+1:indafter-1,c) = 0;
+            burstnum(indafter+(0:9),c) = 1:10;
         
-        burstpulse(indbefore+1:indafter+9,c) = i;
+            burstpulse(indbefore+1:indafter+9,c) = i;
+        end
     end
 end

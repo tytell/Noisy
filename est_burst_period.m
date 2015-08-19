@@ -1,7 +1,8 @@
-function [pers,freq,phase] = est_burst_period(burstt, t, varargin)
+function [pers,isdouble,relphase] = est_burst_period(burstt, varargin)
 
 opt.nsmoothper = 3;
 opt.discard = logical([]);
+opt.method = 'min';     % or firstafter
 
 opt = parsevarargin(opt, varargin, 2);
 
@@ -86,14 +87,31 @@ pers2(ord) = pers1;
 pers = NaN(size(per0));
 pers(good) = pers2;
 
-span = (t >= min(t1)) & (t <= max(t1));
-good = isfinite(t1) & isfinite(pers1);
-freq = NaN(size(t));
-freq(span) = interp1(t1(good),1./pers1(good), t(span), 'cubic');
-phase = NaN(size(t));
-phase(span) = cumtrapz(t(span),freq(span));
-
-
+relphase = NaN(size(burstt,1),nchan,nchan);
+for i = 1:nchan
+    ti = burstt(:,i);
+    ti(isdouble(:,i)) = NaN;
+    for j = i+1:nchan
+        tj = burstt(:,j);
+        tj(isdouble(:,j)) = NaN;
+        
+        for k = 1:length(ti)
+            switch opt.method
+                case 'min'
+                    [~,ind] = min(abs(tj - ti(k)));
+                    
+                case 'firstafter'
+                    ind = first(tj >= ti(k));
+            end
+            
+            d = tj(ind) - ti(k);
+            
+            if d < 1.5*pers(i)
+                relphase(k,i,j) = d/pers(i);
+            end
+        end
+    end
+end
 
 
 
