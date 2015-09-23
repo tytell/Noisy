@@ -52,6 +52,10 @@ for c = 1:nchan
     end
 
     good = ~isnan(bt(:,c));
+    if all(~good)
+        continue;
+    end
+    
     boff1 = boff(good,c);
     bon1 = bon(good,c);
     bt1 = bt(good,c);
