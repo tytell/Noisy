@@ -54,7 +54,9 @@ ind  = find(mask,1,'first');
 string(~mask) = replaceStr; %Replaces all non-alpha numeric values with _
 string = string(ind:end);
 
-if(~isletter(string(1))) || alwaysPrepend
+if isempty(string)
+    varName = 'empty';
+elseif(~isletter(string(1))) || alwaysPrepend
     if ~isempty(find(~(isstrprop(prependStr,'alphanum') | replaceStr == '_'),1))
         error('PREPENDSTR values must be alphaNumeric or an underscore')
     elseif ~isletter(prependStr(1))

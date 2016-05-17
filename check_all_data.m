@@ -1,120 +1,176 @@
 function check_all_data
 
-basepath = 'E:\CPG perturbations';
+basepath = '/Volumes/Data/CPG perturbations/'; %'E:\CPG perturbations';
 
-outfile = 'lampreydata4.csv';
+outfile = 'perturbationsdata002.csv';
 
-% files = {...
-%      '2014-09-17/L29-rost-045.h5', ...
+%files = {...
+
 %      '2014-09-17/L29-rost-042.h5', ...
 %     '2014-12-18/L33-caud-037.h5', ...
-% ... %    '2014-12-18/L33-caud-031.h5', ...      % not entrained
+%     '2014-12-18/L33-caud-031.h5', ...      % not entrained
 %     '2014-12-18/L33-caud-030.h5', ...
 % };
  %'2014-07-11/L24-rost-052.h5', ...             % good file
 %     '2014-07-11/L24-rost-059.h5', ...         % good file
 
+inputyn('','clearsaved');
 
 files = {...
-        '2014-11-14/L32-rost-083.h5', ...
-        '2014-11-14/L32-rost-084.h5', ...
-        '2014-11-14/L32-rost-085.h5', ...
-        '2015-06-26/L48-caud-046.tdms'};
-... %   '2014-11-13/L32-caud-027.h5', ...       % bad file
-... %   '2014-11-13/L32-caud-029.h5', ...       % bad file
-... %   '2014-11-13/L32-caud-028.h5', ...            % not good-revise
-... %   '2014-11-13/L32-caud-023.h5', ...            
-... %   '2014-11-13/L32-caud-022.h5', ...            % not entrained 
-... %   '2014-07-11/L24-rost-054.h5', ...           % not entrained
-... %   '2014-09-17/L29-rost-030.h5', ... 
-... %   '2014-09-17/L29-rost-031.h5', ...          % bad file
-... %    '2014-09-17/L29-rost-032.h5', ...             % bad file
-... %    '2014-09-17/L29-rost-042.h5', ...           % No Amplitude file//Good figures
-... %    '2014-09-17/L29-rost-044.h5', ...           % No Amplitude file// bad file
-... %    '2014-09-17/L29-rost-045.h5', ...
-... %    '2014-09-17/L29-rost-046.h5', ...
-... %    '2014-09-17/L29-rost-047.h5', ...    
-... %    '2014-09-17/L29-rost-048.h5', ...    
-... %    '2014-11-14/L32-rost-080.h5', ...
-... %    '2014-11-14/L32-rost-081.h5', ...
-... %    '2014-12-18/L33-caud-026.h5', ...
-... %    '2014-12-18/L33-caud-027.h5', ...
-... %    '2014-12-18/L33-caud-028.h5', ...
-... %    '2014-12-18/L33-caud-029.h5', ...
-... %    '2014-12-18/L33-caud-030.h5', ...
-... %    '2014-12-18/L33-caud-031.h5', ...
-... %    '2014-12-18/L33-caud-037.h5', ...
-... %    '2014-12-18/L33-caud-038.h5', ...
-... %    '2014-12-18/L33-caud-039.h5', ...
-... %    '2014-12-19/L33-rost-063.h5', ...
-... %    '2014-12-19/L33-rost-071.h5', ...
-... %    '2014-11-13/L32-caud-022.h5', ...
-... %    '2014-11-13/L32-caud-027.h5', ...
-... %    '2014-11-13/L32-caud-028.h5', ...
-... %    '2014-11-13/L32-caud-023.h5', ...
-... %    '2014-11-13/L32-caud-026.h5', ...
-... %    '2014-11-13/L32-caud-029.h5', ... 
-... %    '2014-10-17/L31-caud-019.h5', ... % NOT ENTRAINED
-... %    '2014-10-17/L31-caud-022.h5', ...
-... %    '2014-10-17/L31-caud-024.h5', ...
-... %    '2014-10-17/L31-caud-020.h5', ...
-... %    '2014-10-17/L31-caud-023.h5', ...
-... %    '2014-10-17/L31-caud-025.h5', ...
-... %    '2014-10-17/L31-caud-018.h5', ...
-... %    '2015-06-26/L48-caud-025.tdms', ...
-... %    '2015-06-26/L48-caud-026.tdms', ...
-... %    '2015-06-26/L48-caud-027.tdms', ...
-... %    '2015-06-26/L48-caud-028.tdms', ...
-... %    '2015-06-26/L48-caud-012.tdms', ...
-... %    '2015-06-26/L48-caud-013.tdms', ...
-... %    '2015-06-26/L48-caud-014.tdms', ...
-... %    '2015-06-26/L48-caud-015.tdms', ...
-... %    '2015-06-26/L48-caud-042.tdms', ...
-... %    '2015-06-26/L48-caud-043.tdms', ...
-... %    '2015-06-26/L48-caud-044.tdms', ...
-... %    '2015-06-26/L48-caud-045.tdms', ...
-... %    '2015-06-26/L48-caud-033.tdms', ...
-... %    '2015-06-26/L48-caud-032.tdms', ...
-... %    '2015-06-26/L48-caud-031.tdms', ...
-... %    '2015-06-26/L48-caud-029.tdms', ...
-... %   '2015-06-26/L48-caud-016.tdms', ...
-... %    '2015-06-26/L48-caud-017.tdms', ...
-... %    '2015-06-26/L48-caud-018.tdms', ...
-... %    '2015-06-26/L48-caud-019.tdms', ...
-... %    '2015-06-26/L48-caud-038.tdms', ...
-... %    '2015-06-26/L48-caud-039.tdms', ...
-... %    '2015-06-26/L48-caud-040.tdms', ...
-... %    '2015-06-26/L48-caud-041.tdms', ...
-... %    '2015-02-11/L35-rost-021.h5', ...
-... %    '2015-02-11/L35-rost-022.h5', ...
-... %    '2015-02-11/L35-rost-023.h5', ...
-... %    '2015-02-11/L35-rost-024.h5', ...
-... %    '2015-02-11/L35-rost-025.h5', ...
-... %    '2015-02-11/L35-rost-033.h5', ...
-... %    '2015-02-11/L35-rost-026.h5', ...
-... %    '2015-02-11/L35-rost-027.h5', ...
-... %    '2015-02-11/L35-rost-028.h5', ...
-... %    '2015-02-11/L35-rost-026.h5', ...
-... %    '2015-02-11/L35-rost-027.h5', ...
-... %    '2015-02-11/L35-rost-028.h5', ...
-... %    '2015-03-25/L40-rost-046.h5', ...
-... %    '2015-03-25/L40-rost-048.h5', ...
-... %   '2015-03-25/L40-rost-050.h5', ...
-... %    '2015-03-25/L40-rost-056.h5', ...
-... %    '2015-03-25/L40-rost-058.h5', ...
-... %    '2015-03-25/L40-rost-060.h5'};
+%         '2016-04-15/L72-rost-014.tdms', ...
+%         '2016-04-15/L72-rost-015.tdms', ...
+%         '2016-04-15/L72-rost-019.tdms', ...
+%         '2016-04-15/L72-rost-023.tdms',};
+%      '2014-06-20/L22-rost-039.h5'    % L22
+%      '2014-06-20/L22-rost-050.h5'
+%      '2014-06-20/L22-rost-051.h5'
+%      '2014-06-20/L22-rost-052.h5'
+...%     '2014-07-11/L24-rost-052.h5'    % L24
+...%     '2014-07-11/L24-rost-053.h5'
+...%     '2014-07-11/L24-rost-054.h5'
+...%     '2014-07-11/L24-rost-059.h5'
+...%     '2014-07-11/L24-rost-059.h5'
+...%     '2014-09-17/L29-rost-030.h5'    % L29
+...%     '2014-09-17/L29-rost-031.h5'
+...%     '2014-09-17/L29-rost-032.h5'
+...%     '2014-09-17/L29-rost-042.h5'
+...%BAD FILE    '2014-09-17/L29-rost-044.h5' 
+...%     '2014-09-17/L29-rost-045.h5'
+...%     '2014-09-17/L29-rost-046.h5'
+...%     '2014-09-17/L29-rost-047.h5'
+...%     '2014-09-17/L29-rost-048.h5'
+...%%BAD FILE     '2014-10-17/L31-caud-018.h5'    % L31
+...%BAD FILE     '2014-10-17/L31-caud-019.h5'
+...%BAD FILE     '2014-10-17/L31-caud-020.h5'
+...%     '2014-10-17/L31-caud-022.h5'
+...%     '2014-10-17/L31-caud-023.h5'
+...%     '2014-10-17/L31-caud-024.h5'
+...%     '2014-10-17/L31-caud-025.h5'
+...%     '2014-11-13/L32-caud-022.h5'    % L32-caud
+...%%BAD FILE      '2014-11-13/L32-caud-023.h5'
+%    '2014-11-13/L32-caud-027.h5'
+%%BAD FILE      '2014-11-13/L32-caud-026.h5'
+%    '2014-11-13/L32-caud-028.h5'
+%    '2014-11-13/L32-caud-029.h5'
+%    '2014-11-14/L32-rost-080.h5'    % L32-rost
+%    '2014-11-14/L32-rost-081.h5'
+%    '2014-11-14/L32-rost-083.h5'
+%    '2014-11-14/L32-rost-084.h5'
+%   '2014-11-14/L32-rost-085.h5'
+ %    '2014-12-18/L33-caud-026.h5'    % L33-caud
+%BAD FILE     '2014-12-18/L33-caud-027.h5'
+%     '2014-12-18/L33-caud-028.h5'
+%     '2014-12-18/L33-caud-029.h5'
+%     '2014-12-18/L33-caud-030.h5'
+%     '2014-12-18/L33-caud-031.h5'
+%     '2014-12-18/L33-caud-037.h5'
+%     '2014-12-18/L33-caud-038.h5'
+%     '2014-12-18/L33-caud-039.h5'
+%     '2014-12-19/L33-rost-063.h5'    % L33-rost
+%     '2014-12-19/L33-rost-071.h5'
+%      '2014-12-19/L33-rost-059.h5'
+%     '2014-12-19/L33-rost-073.h5'
+   %  '2015-02-11/L35-rost-021.h5'    % L35
+   %  '2015-02-11/L35-rost-022.h5'
+   %  '2015-02-11/L35-rost-023.h5'
+   %  '2015-02-11/L35-rost-024.h5'
+  %   '2015-02-11/L35-rost-025.h5'
+%AD FILE     '2015-02-11/L35-rost-026.h5'
+ %    '2015-02-11/L35-rost-027.h5'
+ %    '2015-02-11/L35-rost-028.h5'
+ %    '2015-02-11/L35-rost-033.h5'
+ %    '2015-03-25/L40-rost-046.tdms'    % L40
+ %    '2015-03-25/L40-rost-048.tdms'
+ %   '2015-03-25/L40-rost-050.tdms'
+ %    '2015-03-25/L40-rost-056.tdms'
+ %   '2015-03-25/L40-rost-058.tdms'
+ %    '2015-03-25/L40-rost-060.tdms'
+ %    '2015-03-25/L40-rost-064.tdms'  %(0 amp)
+ %    '2015-03-25/L40-rost-065.tdms'  %(0 amp)
+ %    '2015-06-26/L48-caud-012.tdms'    % L48
+ %    '2015-06-26/L48-caud-013.tdms'
+ %    '2015-06-26/L48-caud-014.tdms'
+ %    '2015-06-26/L48-caud-015.tdms'
+  %   '2015-06-26/L48-caud-016.tdms'
+  %   '2015-06-26/L48-caud-017.tdms'
+  %   '2015-06-26/L48-caud-018.tdms'
+  %   '2015-06-26/L48-caud-019.tdms'
+ %    '2015-06-26/L48-caud-025.tdms'
+%   %  '2015-06-26/L48-caud-026.tdms'
+ %    '2015-06-26/L48-caud-027.tdms'
+%     '2015-06-26/L48-caud-028.tdms'
+  %   '2015-06-26/L48-caud-029.tdms'
+ %    '2015-06-26/L48-caud-031.tdms'
+%     '2015-06-26/L48-caud-032.tdms'
+  %   '2015-06-26/L48-caud-033.tdms'
+ %    '2015-06-26/L48-caud-038.tdms'
+%     '2015-06-26/L48-caud-039.tdms'
+ %    '2015-06-26/L48-caud-040.tdms'
+%     '2015-06-26/L48-caud-041.tdms'
+%     '2015-06-26/L48-caud-042.tdms'
+%     '2015-06-26/L48-caud-043.tdms'
+%    '2015-06-26/L48-caud-044.tdms'
+%     '2015-06-26/L48-caud-045.tdms'
+%BAD FILE     '2015-06-26/L48-caud-046.tdms'
+%     '2015-06-26/L48-caud-048.tdms'
+%     '2015-06-26/L48-caud-049.tdms'
+%     '2015-06-26/L48-caud-050.tdms'
+%BAD FILE     '2015-06-26/L48-caud-051.tdms'
+%     '2015-06-26/L48-caud-052.tdms'
+%     '2015-10-30/L59-rost-043.tdms'    % L59
+%     '2015-10-30/L59-rost-044.tdms'
+%     '2015-10-30/L59-rost-023.tdms'
+%     '2015-10-30/L59-rost-024.tdms'
+%     '2015-10-30/L59-rost-031.tdms'
+%     '2015-10-30/L59-rost-032.tdms'
+%     '2015-10-30/L59-rost-035.tdms'
+%     '2015-10-30/L59-rost-036.tdms'
+%     '2015-10-30/L59-rost-037.tdms'
+%     '2015-10-30/L59-rost-038.tdms'
+%     '2015-10-30/L59-rost-039.tdms'
+%     '2015-10-30/L59-rost-040.tdms'
+%     '2015-10-30/L59-rost-041.tdms'
+%     '2015-10-30/L59-rost-042.tdms'
+    '2015-11-13/L60-rost-018.tdms'    % L60
+    '2015-11-13/L60-rost-014.tdms'
+    '2015-11-13/L60-rost-015.tdms'
+    '2015-11-13/L60-rost-018.tdms'
+    '2015-11-13/L60-rost-019.tdms'
+    '2015-11-13/L60-rost-022.tdms'
+    '2015-11-13/L60-rost-023.tdms'
+    '2015-11-13/L60-rost-024.tdms'
+    '2015-11-13/L60-rost-025.tdms'
+    '2015-11-13/L60-rost-027.tdms'
+    '2015-11-13/L60-rost-029.tdms'
+    '2015-11-13/L60-rost-030.tdms'
+    '2015-11-13/L60-rost-031.tdms'
+    '2015-11-13/L60-rost-032.tdms'
+    '2015-11-13/L60-rost-033.tdms'
+    '2015-11-13/L60-rost-034.tdms'
+    };
 
-stimuluslocations.L24_rost = 22;       % guess
+stimuluslocations.L22_rost = 18; 
+stimuluslocations.L24_rost = 24;        
 stimuluslocations.L29_rost = 22;
-stimuluslocations.L31_caud = 46;        %guess
-stimuluslocations.L32_caud = 45;        %guess
+stimuluslocations.L31_caud = 46;        
+stimuluslocations.L32_caud = 47;        
 stimuluslocations.L32_rost = 20;
 stimuluslocations.L33_caud = 52;
 stimuluslocations.L33_rost = 30;
 stimuluslocations.L35_rost = 19;
 stimuluslocations.L40_rost = 20;
 stimuluslocations.L36_caud = 44;
-stimuluslocations.L48_caud = 42;
+stimuluslocations.L48_caud = 42; 
+stimuluslocations.L59_rost = 22;
+stimuluslocations.L60_rost = 21;
+stimuluslocations.L72_rost = 18;
+
+
+override_good_chan.L60 = [false true true true];
+%override_good_chan.L60_rost_015 = [false true false true];
+%override_good_chan.L60_caud = [false true false true];
+override_good_chan.L40 = [false true true];
+
 
 %from Daniela's processing code:
 params.L24_rost_052.threshold = [-0.450816 -0.0402448 -0.524267 -0.277275;0.540617 0.0558435 0.339285 0.238219];
@@ -270,6 +326,7 @@ goodchan = [];
 
 indiv = cell(size(files));
 part = cell(size(files));
+filenumstr = cell(size(files));
 filenum = zeros(size(files));
 stimloc = zeros(size(files));
 for f = 1:length(files)
@@ -281,8 +338,12 @@ for f = 1:length(files)
     
     indiv{f} = tok{1};
     part{f} = tok{2};
+    filenumstr{f} = tok{3};
     filenum(f) = str2double(tok{3});
     
+    if ~isfield(stimuluslocations, [indiv{f} '_' part{f}])
+        error('Please add stimulus location for %s', [indiv{f} '_' part{f}]);
+    end
     stimloc(f) = stimuluslocations.([indiv{f} '_' part{f}]);
     
     matfile = [fn '.mat'];
@@ -326,14 +387,30 @@ for f = 1:length(files)
             'goodchan',goodchan, 'eventtimes',pulsetimes);
     end
     
-    if ~isfield(data,'bursttpre')
+    if ~isfield(data,'bursttpre') || inputyn('Process pulse data again?','default',false)
         data = process_pulse_data2(data, 'savediagnostics','diagnosticname',[fn '.pdf']);
         
         save(matfile,'data');
     end
+    if sum(abs(data.dphasepost(:)) > 0.5) > 0.1 * sum(isfinite(data.dphasepost(:)))
+        warning('Phase matching seems to be off');
+    end
     
-    nchan = sum(data.goodchan);
     goodchan = data.goodchan;
+    if isfield(override_good_chan, [indiv{f} '_' part{f} '_' filenumstr{f}])
+        goodchan = override_good_chan.([indiv{f} '_' part{f} '_' filenumstr{f}]);
+    elseif isfield(override_good_chan, [indiv{f} '_' part{f}])
+        goodchan = override_good_chan.([indiv{f} '_' part{f}]);
+    elseif isfield(override_good_chan, indiv{f})
+        goodchan = override_good_chan.(indiv{f});
+    end
+    if length(goodchan) ~= size(data.sig,2)
+        warning('Override good channels should have length %d, but actually has length %d. Skipping', ...
+            size(data.sig,2), length(goodchan));
+        goodchan = data.goodchan;
+    end
+    nchan = sum(goodchan);
+    
     nbursts = size(data.bursttpre,3) + size(data.bursttpost,3) + 1;
     npulses = size(data.bursttpre,1);
 
@@ -342,7 +419,7 @@ for f = 1:length(files)
     out.filename = repmat({fn},[npulses nchan nbursts]);
     out.indiv = repmat(indiv(f),[npulses nchan nbursts]);
     out.filenum = repmat(filenum(f), [npulses nchan nbursts]);
-    out.channel = repmat(data.channelnames(goodchan)', [npulses 1 nbursts]);
+    out.channel = repmat(makerow(data.channelnames(goodchan)), [npulses 1 nbursts]);
     
     out.stimfreq = repmat(data.stimfreq, [npulses nchan nbursts]);
     out.stimamp = repmat(data.amp,[npulses nchan nbursts]);
@@ -351,7 +428,8 @@ for f = 1:length(files)
     out.pulsephasestd = repmat(data.stimphasestd,[1 nchan nbursts]);
     out.pulsedir = repmat(data.Direction,[1 nchan nbursts]);
     out.pulset = repmat(data.pulset - t0, [1 nchan nbursts]);
-
+    out.origphase = repmat(data.Phase, [1 nchan nbursts]);                       
+    
     out.burstnum = repmat(shiftdim(-size(data.bursttpre,3):size(data.bursttpost,3),-1), ...
         [npulses nchan 1]);
     
@@ -359,6 +437,11 @@ for f = 1:length(files)
     out.burstt = out.burstt(:,goodchan,:) - repmat(t0,[1 nchan nbursts]);
     out.burstfreq = 1./cat(3,data.burstperpre,data.burstperduring,data.burstperpost);
     out.burstfreq = out.burstfreq(:,goodchan,:);
+    
+    burstfreqpre = 1./nanmedian(flatten(data.burstperpre(:,goodchan,:),2:3),2);
+    out.burstfreqpre = repmat(burstfreqpre,[1,nchan,nbursts]);
+    
+    out.dburstfreq = out.burstfreq - out.burstfreqpre;
     
     out.dphase = cat(3,data.dphasepre(:,goodchan,:),...
         NaN(npulses,nchan,2),...
