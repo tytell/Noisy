@@ -1,7 +1,10 @@
 function data = loadEntrain4Data(filename, varargin)
 
 opt.checksweep = true;
-opt.stimuluslocation = [];
+opt.stimuluslocation = 48;
+opt.convertnames = {'Amplitude', 'SinAmpStartDeg';
+          'Frequency', 'SinFreqStartHz';
+     'NoiseAmplitude', 'NoiseAmpStartDeg'};
 opt = parsevarargin(opt,varargin, 4);
 
 if ~exist('TDMS_getStruct','file')
@@ -10,22 +13,34 @@ end
 
 fileinfo = TDMS_getStruct(filename,[],{'GET_DATA_OPTION','getnone'});
 
-startdatevec = TDMS_readChannelOrGroup(filename,'Untitled','StartDateVector');
+try
+    startdatevec = TDMS_readChannelOrGroup(filename,'Untitled','StartDateVector');
+catch err
+    warning('Can''t read start date vec. But that''s not a problem');
+end
 sampfreq = fileinfo.Input.Props.SampFreqHz;
 sampfreq = double(sampfreq);
-motorfreq = fileinfo.Output.Props.MotorOutputFreqHz;
-
-if ~isfield(fileinfo.Output.Motor.Props,'StimulusType')
-    error('Stimulus type info not in file... Weird.');
+if isfield(fileinfo.Output.Props, 'SampFreqHz')
+    motorfreq = fileinfo.Output.Props.SampFreqHz;
+else
+    motorfreq = fileinfo.Output.Props.MotorOutputFreqHz;
 end
 
-stimtype = fileinfo.Output.Motor.Props.StimulusType;
+if ~isfield(fileinfo.Output.Motor.Props,'StimulusType')
+    stimtype = 'Sine';
+else
+    stimtype = fileinfo.Output.Motor.Props.StimulusType;
+end
 
 [sig,channelnames] = TDMS_readChannelOrGroup(filename,'Input');
 sig = cat(1,sig{:});
 sig = sig';
 
-ang = TDMS_readChannelOrGroup(filename,'Output','Motor');
+if isfield(fileinfo.Input, 'Encoder')
+    ang = TDMS_readChannelOrGroup(filename,'Input','Encoder');
+else
+    ang = TDMS_readChannelOrGroup(filename,'Output','Motor');
+end
 ang = ang';
 if ~isempty(opt.stimuluslocation)
     stimpos = opt.stimuluslocation;
@@ -45,8 +60,10 @@ else
     motorsavefreq = motorfreq;
 end
 
-tang = (0:size(ang,1)-1)' / motorsavefreq;
-ang = interp1(tang,ang, t);
+if motorsavefreq ~= sampfreq
+    tang = (0:size(ang,1)-1)' / motorsavefreq;
+    ang = interp1(tang,ang, t);
+end
 
 data.sig = sig;
 data.t = t;
@@ -90,7 +107,11 @@ else
     stimcycle = [];
 end
 
-stimattrs = fileinfo.Output.Motor.Props;
+if isfield(fileinfo.Output, 'Stimulus')
+    stimattrs = fileinfo.Output.Stimulus.Props;
+else
+    stimattrs = fileinfo.Output.Motor.Props;
+end
 [stimattrdata,stimattrnames] = TDMS_readChannelOrGroup(filename,'Output');
 isattr = ~ismember(stimattrnames,{'Motor','SinePhase','StimPhase','RampPhase'});
 if any(isattr)
@@ -108,6 +129,19 @@ end
 
 data = joinstructfields(data,stimattrs);
 data.StimulusType = stimtype;
+
+if ~isfield(data, 'BeforeDurSec')
+    data.BeforeDurSec = 0;
+    data.StimDurSec = t(end);
+end
+
+fn = fieldnames(data);
+for i = 1:length(fn)
+    k = find(strcmp(fn{i}, opt.convertnames(:,1)));
+    if length(k) == 1
+        data.(opt.convertnames{k,2}) = data.(fn{i});
+    end
+end
 
 t = t - data.BeforeDurSec;
 isstim = (t >= 0) & (t < data.StimDurSec);
